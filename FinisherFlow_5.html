@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Finisher Flow</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0C0C0F;--sf:#141418;--sf2:#1C1C22;--gold:#C9A84C;--g2:#E8C97A;--tx:#F0EDE8;--tx2:#9B9890;--tx3:#5A5856;--red:#E24B4A;--grn:#1D9E75;--blu:#378ADD;--bd:#2A2A32}
+html,body{min-height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s}
+#splash.gone{opacity:0;pointer-events:none}
+.slogo{font-size:3rem;font-weight:900;letter-spacing:6px;color:var(--gold)}
+.ssub{color:var(--tx3);font-size:.75rem;letter-spacing:3px;text-transform:uppercase;margin-top:.4rem}
+#screen{min-height:100vh}
+.hidden{display:none!important}
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.auth-box{background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:2rem;width:100%;max-width:400px}
+.auth-logo{font-size:2.2rem;font-weight:900;letter-spacing:4px;color:var(--gold);text-align:center;margin-bottom:.2rem}
+.auth-tag{text-align:center;color:var(--tx3);font-size:.7rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:.85rem}
+.lang-bar{display:flex;justify-content:center;margin-bottom:1.25rem}
+.lang-wrap{display:flex;gap:4px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:3px}
+.lbtn{padding:.35rem .9rem;border:none;border-radius:5px;font-size:.82rem;font-weight:700;cursor:pointer;transition:.15s;letter-spacing:.5px}
+.lbtn.on{background:var(--gold);color:#0C0C0F}
+.lbtn.off{background:transparent;color:var(--tx2)}
+.auth-title{font-size:1.1rem;font-weight:600;text-align:center;margin-bottom:1.25rem}
+.fld{margin-bottom:.9rem}
+.fld label{display:block;font-size:.68rem;color:var(--tx2);letter-spacing:.5px;margin-bottom:.35rem;text-transform:uppercase}
+.fld input,.fld select{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:.7rem .9rem;color:var(--tx);font-size:.95rem;outline:none;-webkit-appearance:none;transition:.2s}
+.fld input:focus,.fld select:focus{border-color:var(--gold)}
+.fld select option{background:var(--sf2)}
+.btn-gold{width:100%;padding:.85rem;background:var(--gold);border:none;border-radius:10px;color:#0C0C0F;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:.75rem;transition:.2s}
+.btn-gold:active{background:var(--g2)}
+.auth-sw{text-align:center;font-size:.85rem;color:var(--tx2);margin-bottom:.75rem}
+.auth-sw span{color:var(--gold);cursor:pointer;text-decoration:underline}
+.auth-div{text-align:center;color:var(--tx3);font-size:.78rem;margin:.65rem 0;position:relative}
+.auth-div::before,.auth-div::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--bd)}
+.auth-div::before{left:0}.auth-div::after{right:0}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.dbtn{padding:.75rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;text-align:center;border:none;transition:.2s}
+.dbtn.admin{background:rgba(201,168,76,.15);border:2px solid var(--gold);color:var(--gold)}
+.dbtn.other{background:var(--sf2);border:1px solid var(--bd);color:var(--tx2)}
+.trial-box{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.65rem;font-size:.78rem;color:var(--gold);text-align:center;margin-bottom:1rem}
+.err-box{background:rgba(226,75,74,.1);border:1px solid rgba(226,75,74,.3);border-radius:8px;padding:.65rem .85rem;font-size:.82rem;color:#f08080;margin-bottom:.85rem;display:none}
+.err-box.show{display:block}
+/* DISCLAIMER */
+.disc-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.disc-box{background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:2rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.disc-box h2{font-size:1.6rem;font-weight:900;color:var(--red);text-align:center;margin-bottom:.5rem}
+.disc-box h3{font-size:.88rem;font-weight:600;color:var(--gold);margin:1rem 0 .35rem}
+.disc-box p,.disc-box li{font-size:.82rem;color:var(--tx2);line-height:1.7}
+.disc-box ul{padding-left:1.2rem;margin-bottom:.5rem}
+.disc-accept{display:flex;align-items:flex-start;gap:.75rem;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:1rem;margin-top:1.25rem;cursor:pointer;transition:.2s}
+.disc-accept.checked{border-color:var(--gold)}
+.disc-accept input{margin-top:3px;flex-shrink:0;accent-color:var(--gold)}
+.disc-accept span{font-size:.82rem;line-height:1.5}
+/* APP */
+.app-layout{display:flex;min-height:100vh}
+.sidebar{width:225px;background:var(--sf);border-right:1px solid var(--bd);position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column;z-index:100;transition:transform .3s;overflow-y:auto}
+.sb-logo{padding:1.25rem;border-bottom:1px solid var(--bd)}
+.sb-logo h1{font-size:1.5rem;font-weight:900;letter-spacing:3px;color:var(--gold);line-height:1.1}
+.sb-logo p{font-size:.62rem;color:var(--tx3);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.sb-user{padding:.7rem 1.25rem;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--bd)}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:#0C0C0F;flex-shrink:0}
+.sb-info p{font-size:.82rem;font-weight:500}
+.sb-info span{font-size:.68rem;color:var(--gold);text-transform:uppercase;letter-spacing:.5px}
+.sb-nav{flex:1;padding:.5rem 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.6rem 1.25rem;cursor:pointer;font-size:.85rem;color:var(--tx2);border-left:3px solid transparent;transition:.15s;user-select:none}
+.nav-item:hover{background:var(--sf2);color:var(--tx)}
+.nav-item.active{background:var(--sf2);color:var(--gold);border-left-color:var(--gold)}
+.sb-bottom{padding:.75rem 1.25rem;border-top:1px solid var(--bd)}
+.app-lang{display:flex;gap:3px;background:var(--sf2);border-radius:7px;padding:3px;margin-bottom:.6rem}
+.alb{flex:1;padding:.3rem;border:none;background:transparent;color:var(--tx2);cursor:pointer;border-radius:5px;font-size:.75rem;font-weight:700;transition:.15s;letter-spacing:.5px}
+.alb.on{background:var(--gold);color:#0C0C0F}
+.logout-btn{width:100%;padding:.5rem;background:transparent;border:1px solid var(--bd);border-radius:8px;color:var(--tx2);font-size:.82rem;cursor:pointer;transition:.2s}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+.main-content{margin-left:225px;padding:1.75rem;min-height:100vh}
+.page{display:none}.page.active{display:block}
+.hamburger{display:none;position:fixed;top:.85rem;left:.85rem;z-index:200;background:var(--sf);border:1px solid var(--bd);border-radius:9px;padding:.55rem .65rem;cursor:pointer;color:var(--tx);font-size:1.1rem;line-height:1}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90}
+.overlay.show{display:block}
+/* CARDS & COMPONENTS */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.25rem}
+.ph h2{font-size:1.8rem;font-weight:900;letter-spacing:2px;margin-bottom:.15rem}
+.ph p{color:var(--tx2);font-size:.85rem;margin-bottom:1.5rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem}
+.stat{background:var(--sf2);border-radius:9px;padding:.75rem 1rem}
+.stat label{font-size:.6rem;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:.25rem}
+.stat .v{font-size:1.4rem;font-weight:900;letter-spacing:.5px;line-height:1.2}
+.stat .v.gold{color:var(--gold)}.stat .v.grn{color:var(--grn)}
+.stat .s{font-size:.72rem;color:var(--tx2);margin-top:.15rem}
+.btn{padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:.2s}
+.btn.p{background:var(--gold);color:#0C0C0F}.btn.p:active{background:var(--g2)}
+.btn.s{background:transparent;border:1px solid var(--bd);color:var(--tx2)}.btn.s:hover{border-color:var(--gold);color:var(--gold)}
+.btn.d{background:transparent;border:1px solid var(--red);color:var(--red)}
+.btn.sm{padding:.4rem .75rem;font-size:.78rem}
+.nb{border-radius:8px;padding:.65rem .85rem;font-size:.78rem;line-height:1.6;margin-bottom:.85rem}
+.nb.gold{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);color:var(--gold)}
+.nb.blue{background:rgba(55,138,221,.07);border:1px solid rgba(55,138,221,.2);color:#7ab8f5}
+.nb.red{background:rgba(226,75,74,.07);border:1px solid rgba(226,75,74,.2);color:#f08080}
+.nb.green{background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.2);color:#4ac99b}
+.pb-wrap{background:var(--sf2);border-radius:20px;height:7px;overflow:hidden;margin-top:.35rem}
+.pb{height:100%;border-radius:20px;transition:.6s}
+.pb-lbl{display:flex;justify-content:space-between;font-size:.78rem;color:var(--tx2);margin-bottom:.2rem}
+.client-row{display:flex;align-items:center;gap:10px;padding:.75rem 1rem;border-bottom:1px solid var(--bd);cursor:pointer;transition:.15s}
+.client-row:hover{background:var(--sf2)}
+.client-row:last-child{border-bottom:none}
+.cav{width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#0C0C0F;flex-shrink:0}
+.ci{flex:1}.cn{font-weight:500;font-size:.9rem}.cm{font-size:.75rem;color:var(--tx2);margin-top:1px}
+.tier-pill{font-size:.68rem;padding:.15rem .55rem;border-radius:20px}
+.tp-p{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3)}
+.tp-s{background:rgba(55,138,221,.15);color:var(--blu);border:1px solid rgba(55,138,221,.3)}
+.tp-d{background:rgba(91,88,86,.15);color:var(--tx2);border:1px solid var(--bd)}
+.bdg{padding:.2rem .55rem;border-radius:20px;font-size:.68rem;font-weight:500}
+.rb{background:rgba(55,138,221,.15);color:var(--blu);border:1px solid rgba(55,138,221,.3)}
+.gb{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3)}
+.xb{background:rgba(91,88,86,.15);color:var(--tx2);border:1px solid var(--bd)}
+.phrase-card{background:linear-gradient(135deg,#0f0d00,#1c1800);border:1px solid rgba(201,168,76,.4);border-radius:14px;padding:1.5rem;margin-bottom:1rem}
+.course-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;cursor:pointer;transition:.2s}
+.course-card:hover{border-color:var(--gold)}
+.ct{height:85px;background:linear-gradient(135deg,#0f0d00,#1c1800);display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+.wknav{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+.wkbtn{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.4rem .75rem;color:var(--tx2);cursor:pointer;font-size:.82rem;transition:.15s}
+.wkbtn:hover{border-color:var(--gold);color:var(--gold)}
+.day-row{display:grid;grid-template-columns:48px 1fr;gap:.65rem;margin-bottom:.5rem;align-items:start}
+.dlbl{font-size:.72rem;color:var(--tx2);padding-top:.35rem;text-align:right}
+.dlbl.today{color:var(--gold);font-weight:700}
+.sess-block{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:.85rem}
+.edit-btn{background:transparent;border:1px solid var(--bd);border-radius:5px;padding:.2rem .5rem;color:var(--tx3);font-size:.68rem;cursor:pointer;transition:.15s}
+.edit-btn:hover{border-color:var(--gold);color:var(--gold)}
+.stitle{font-size:1rem;font-weight:700;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin:1.25rem 0 .75rem;padding-bottom:.4rem;border-bottom:1px solid var(--bd)}
+.stitle:first-child{margin-top:0}
+.acc-chip{padding:.2rem .6rem;border-radius:20px;font-size:.7rem;cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--tx3);transition:.15s}
+.acc-chip.on{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
+.tabs{display:flex;gap:3px;background:var(--sf2);padding:3px;border-radius:9px;margin-bottom:1.25rem;flex-wrap:wrap;width:fit-content}
+.tab{padding:.42rem 1rem;border:none;background:transparent;color:var(--tx2);cursor:pointer;border-radius:7px;font-size:.82rem;transition:.15s}
+.tab.active{background:var(--sf);color:var(--tx)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--sf);border:1px solid var(--gold);border-radius:10px;padding:.7rem 1.25rem;color:var(--tx);font-size:.85rem;z-index:9999;opacity:0;transform:translateY(16px);transition:.3s;pointer-events:none;max-width:260px;text-align:center}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0;padding:1rem;padding-top:4rem}
+  .hamburger{display:flex;align-items:center}
+  .g2,.g3{grid-template-columns:1fr}
+  .g4{grid-template-columns:1fr 1fr}
+  .day-row{grid-template-columns:42px 1fr}
+}
+@media(min-width:769px){.sidebar{transform:translateX(0)}}
+</style>
+</head>
+<body>
+<div id="splash"><div class="slogo">FINISHER FLOW</div><div class="ssub">Train · Think · Perform</div></div>
+<div id="screen"></div>
+<div class="toast" id="toast"></div>
+<button class="hamburger" id="hamburger" onclick="toggleSB()" style="display:none">☰</button>
+<div class="overlay" id="overlay" onclick="closeSB()"></div>
+
+<script>
+// ── SUPABASE ───────────────────────────────────────────────────────────────
+var SB = null;
+try {
+  SB = supabase.createClient(
+    'https://mxyynsbxvxbmncdewtoy.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eXluc2J4dnhibW5jZGV3dG95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MjAyMDAsImV4cCI6MjA5NTM5NjIwMH0.nxVgQlAvSxsw5fUV_behyQKCCflQWaxRjZecnkSpJ-c'
+  );
+} catch(e) { console.warn('Supabase init failed', e); }
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+var LANG = 'en';
+var USER = null;
+var PROFILE = null;
+var PAGE = 'home';
+var CLIENT_TAB = 'plan';
+var WK = 0;
+var CURRENT_CLIENT = null;
+var CURRENT_COURSE = null;
+var DISC_CHECKED = false;
+var SLOTS = [
+  {id:'morning',rec:false,recording:false,tr:''},
+  {id:'midday',rec:false,recording:false,tr:''},
+  {id:'afternoon',rec:false,recording:false,tr:''},
+  {id:'night',rec:false,recording:false,tr:''}
+];
+
+// ── TRANSLATIONS ───────────────────────────────────────────────────────────
+var TX = {
+  en: {
+    tagline:'Your complete coaching platform',
+    signin:'Sign In', register:'Start Your Free Trial',
+    email:'Email', password:'Password', fullname:'Full Name',
+    signinbtn:'Sign In', regbtn:'Start Free Trial →',
+    newhere:'New here?', startfree:'Start your free trial',
+    alreadyhave:'Already have an account?', signinlink:'Sign In',
+    iama:'I am a...', athlete:'Athlete / Client', coachopt:'Coach',
+    trialfree:'1 month free — no credit card needed. Cancel anytime.',
+    ortrydemo:'or try demo',
+    discTitle:'Health and Safety',
+    discEnter:'Enter Finisher Flow →',
+    discAccept:'I have read and understood this. I confirm I am medically fit to begin training, or I will consult my doctor first.',
+    signout:'Sign Out',
+    home:'Home', training:'Training', checkins:'Check-ins', mindset:'Mindset',
+    nutrition:'Nutrition', sleep:'Sleep', progress:'Progress', courses:'Courses',
+    clients:'My Clients', intake:'New Intake', access:'Access Control',
+    admin:'Admin Panel', profile:'My Profile', settings:'Settings',
+    goodmorning:'GOOD MORNING', goodafternoon:'GOOD AFTERNOON', goodevening:'GOOD EVENING',
+    todaysphrase:"Today's Phrase", checklist:'Daily Checklist',
+    howfeeling:'How are you feeling?', dailycheckins:'Daily Check-ins',
+    savecheckin:'Save Check-in', sessions:'Sessions', mood:'Mood',
+    sleepl:'Sleep', streak:'Streak', thisweek:'this week', avg:'avg', days:'days',
+    cantrain:'I cannot train today', notifycoach:'Notify coach and adjust plan',
+    whydialog:'Why cannot you train?', estimatedays:'Estimated days off:',
+    skippedplan:'Plan adjusted. Coach notified.',
+    roles:{admin:'Admin',coach:'Training Coach',performance_coach:'Performance Coach',nutritionist:'Nutritionist',client:'Client'},
+    plan_d:'Digital', plan_s:'Standard', plan_p:'Premium',
+    backclients:'Back to Clients', trainingplan:'Training Plan',
+    profiletab:'Profile', stats:'Stats', accesstab:'Access',
+    saveplan:'Save Plan', savechanges:'Save Changes',
+    learnmore:'Learn · Train · Grow', coursesfeedback:'What course would you like next?',
+    cfsend:'Send Suggestion', free:'Free', buycourse:'Buy Course',
+    newclient:'+ New Client', tapmanage:'Tap a client to manage their plan.',
+    editprices:'Edit prices — changes save immediately.',
+    monthly:'/ month', annual:'/ year', saveprices:'Save Prices'
+  },
+  es: {
+    tagline:'Tu plataforma de coaching completa',
+    signin:'Iniciar Sesion', register:'Empieza tu Prueba Gratis',
+    email:'Email', password:'Contrasena', fullname:'Nombre completo',
+    signinbtn:'Iniciar Sesion', regbtn:'Empezar Prueba Gratis',
+    newhere:'Sos nuevo/a?', startfree:'Empieza tu prueba gratis',
+    alreadyhave:'Ya tenes cuenta?', signinlink:'Iniciia sesion',
+    iama:'Soy...', athlete:'Atleta / Cliente', coachopt:'Coach',
+    trialfree:'1 mes gratis. Sin tarjeta. Cancela cuando quieras.',
+    ortrydemo:'o proba el demo',
+    discTitle:'Salud y Seguridad',
+    discEnter:'Entrar a Finisher Flow',
+    discAccept:'Lei y entendi esto. Confirmo que estoy en condiciones de comenzar un programa de entrenamiento.',
+    signout:'Cerrar Sesion',
+    home:'Inicio', training:'Entrenamiento', checkins:'Check-ins', mindset:'Mentalidad',
+    nutrition:'Nutricion', sleep:'Sueno', progress:'Progreso', courses:'Cursos',
+    clients:'Mis Clientes', intake:'Nuevo Cliente', access:'Control de Acceso',
+    admin:'Panel Admin', profile:'Mi Perfil', settings:'Configuracion',
+    goodmorning:'BUENOS DIAS', goodafternoon:'BUENAS TARDES', goodevening:'BUENAS NOCHES',
+    todaysphrase:'Frase del Dia', checklist:'Lista del Dia',
+    howfeeling:'Como te sentis hoy?', dailycheckins:'Check-ins Diarios',
+    savecheckin:'Guardar Check-in', sessions:'Sesiones', mood:'Animo',
+    sleepl:'Sueno', streak:'Racha', thisweek:'esta semana', avg:'prom', days:'dias',
+    cantrain:'Hoy no puedo entrenar', notifycoach:'Avisar al coach y ajustar plan',
+    whydialog:'Por que no podes entrenar?', estimatedays:'Dias estimados:',
+    skippedplan:'Plan ajustado. Coach notificado.',
+    roles:{admin:'Admin',coach:'Coach de Entrenamiento',performance_coach:'Coach de Rendimiento',nutritionist:'Nutricionista',client:'Cliente'},
+    plan_d:'Digital', plan_s:'Estandar', plan_p:'Premium',
+    backclients:'Volver a Clientes', trainingplan:'Plan de Entrenamiento',
+    profiletab:'Perfil', stats:'Estadisticas', accesstab:'Acceso',
+    saveplan:'Guardar Plan', savechanges:'Guardar Cambios',
+    learnmore:'Aprender - Entrenar - Crecer', coursesfeedback:'Que curso te gustaria ver?',
+    cfsend:'Enviar Sugerencia', free:'Gratis', buycourse:'Comprar Curso',
+    newclient:'+ Nuevo Cliente', tapmanage:'Toca un cliente para gestionar su plan.',
+    editprices:'Edita los precios. Los cambios se guardan de inmediato.',
+    monthly:'/ mes', annual:'/ ano', saveprices:'Guardar Precios'
+  }
+};
+
+function t(k) {
+  var v = TX[LANG] && TX[LANG][k];
+  return v !== undefined ? v : (TX.en[k] || k);
+}
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+var CLIENTS = [
+  {id:1,name:'Maria Garcia',ini:'MG',email:'maria@email.com',goal:'Run first marathon',level:'Intermediate',tier:'premium',km:45,sessions:5,mood:4.2,sleep:7.8,streak:14,injuries:'None',target:'Buenos Aires Marathon Oct 2026',diet:'Omnivore',
+   plan:[{d:'Mon',t:'run',title:'Easy Run 8km',det:'Z2 45min Conversational',note:''},{d:'Tue',t:'gym',title:'Strength Legs',det:'Squats lunges 60min',note:'Focus on form'},{d:'Wed',t:'run',title:'Tempo Run 6km',det:'Z3-4 35min Marathon pace',note:''},{d:'Thu',t:'rest',title:'Rest',det:'Stretching 20min',note:''},{d:'Fri',t:'run',title:'Intervals 8x400m',det:'Z4-5 60sec recovery',note:''},{d:'Sat',t:'gym',title:'Strength Upper Core',det:'Push pull 50min',note:''},{d:'Sun',t:'run',title:'Long Run 18km',det:'Z2 100-120min',note:'Hydrate well'}]},
+  {id:2,name:'Pablo Hernandez',ini:'PH',email:'pablo@email.com',goal:'Improve 10K time',level:'Beginner',tier:'standard',km:25,sessions:3,mood:3.8,sleep:7.1,streak:7,injuries:'Left ankle sprain',target:'10K Aug 2026',diet:'Omnivore',
+   plan:[{d:'Mon',t:'run',title:'Easy Run 5km',det:'Z2 30min',note:''},{d:'Tue',t:'rest',title:'Rest',det:'Complete rest',note:''},{d:'Wed',t:'run',title:'Intervals 6x200m',det:'Z4 90sec recovery',note:'Watch the ankle'},{d:'Thu',t:'gym',title:'Strength Full Body',det:'Light weights 45min',note:''},{d:'Fri',t:'run',title:'Easy Run 4km',det:'Z2 25min',note:''},{d:'Sat',t:'rest',title:'Rest',det:'Complete rest',note:''},{d:'Sun',t:'run',title:'Long Run 8km',det:'Z2 50min',note:''}]},
+  {id:3,name:'Sofia Torres',ini:'ST',email:'sofia@email.com',goal:'Sub-2h Half Marathon',level:'Advanced',tier:'premium',km:60,sessions:6,mood:4.7,sleep:8.1,streak:21,injuries:'None',target:'Half Marathon Sep 2026',diet:'Vegetarian',
+   plan:[{d:'Mon',t:'run',title:'Easy Run 10km',det:'Z2 55min',note:''},{d:'Tue',t:'gym',title:'Strength Power',det:'Olympic lifts 60min',note:'Heavy this week'},{d:'Wed',t:'run',title:'Tempo 10km',det:'Z4 50min',note:''},{d:'Thu',t:'run',title:'Recovery Run 6km',det:'Z1 35min',note:''},{d:'Fri',t:'run',title:'Intervals 10x400m',det:'Z5 60sec recovery',note:''},{d:'Sat',t:'gym',title:'Core and Mobility',det:'60min',note:''},{d:'Sun',t:'run',title:'Long Run 22km',det:'Z2 130min',note:'Race sim last 5km'}]}
+];
+
+var PLANS = {digital:{pm:49,pa:470}, standard:{pm:89,pa:860}, premium:{pm:149,pa:1430}};
+
+var COURSES = [
+  {id:1,e:'🏃',cat:'Running',title_en:'Run Your First Marathon',title_es:'Corre tu Primera Maraton',desc_en:'Complete 12-week program',desc_es:'Programa completo de 12 semanas',pr:89},
+  {id:2,e:'🧠',cat:'Mindset',title_en:'The Finisher Mindset',title_es:'La Mentalidad Finisher',desc_en:'Mental training for endurance athletes',desc_es:'Entrenamiento mental para atletas',pr:49},
+  {id:3,e:'🥗',cat:'Nutrition',title_en:'Eat to Run',title_es:'Comer para Correr',desc_en:'Nutrition strategy for runners',desc_es:'Estrategia nutricional para corredores',pr:59},
+  {id:4,e:'⚡',cat:'Running',title_en:'Speed and Intervals',title_es:'Velocidad e Intervalos',desc_en:'Boost your race pace',desc_es:'Mejora tu ritmo de carrera',pr:69},
+  {id:5,e:'🌄',cat:'Running',title_en:'Trail Running Basics',title_es:'Trail Running para Principiantes',desc_en:'From road to trail',desc_es:'Del asfalto al trail',pr:59},
+  {id:6,e:'✨',cat:'Mindset',title_en:'Flow State Training',title_es:'Entrenamiento del Estado de Flow',desc_en:'Peak performance when it matters',desc_es:'Rendimiento maximo cuando importa',pr:39}
+];
+
+var PHRASES_EN = [
+  '"The pain you feel today is the strength you feel tomorrow."',
+  '"Discipline is choosing what you want most over what you want now."',
+  '"Your legs are not giving out. Your head is giving up. Keep running."',
+  '"The finish line is just the beginning of a whole new race."'
+];
+var PHRASES_ES = [
+  '"El dolor que sientes hoy es la fuerza que sentiras manana."',
+  '"La disciplina es elegir lo que mas quieres sobre lo que quieres ahora."',
+  '"No son tus piernas las que se rinden. Es tu cabeza. Sigue corriendo."',
+  '"La meta es solo el comienzo de una nueva carrera."'
+];
+
+var NAV = {
+  admin:[{id:'home',i:'🏠'},{id:'clients',i:'👥'},{id:'intake',i:'📋'},{id:'access',i:'🔐'},{id:'courses',i:'📚'},{id:'admin',i:'⚙️'},{id:'settings',i:'👤'}],
+  coach:[{id:'home',i:'🏠'},{id:'clients',i:'👥'},{id:'intake',i:'📋'},{id:'courses',i:'📚'},{id:'settings',i:'👤'}],
+  client:[{id:'home',i:'🏠'},{id:'training',i:'🏃'},{id:'checkins',i:'🎙'},{id:'mindset',i:'🧘'},{id:'nutrition',i:'🥗'},{id:'sleep',i:'😴'},{id:'progress',i:'📊'},{id:'courses',i:'📚'},{id:'profile',i:'👤'}]
+};
+
+// ── UTILITIES ──────────────────────────────────────────────────────────────
+function toast(m) {
+  var el = document.getElementById('toast');
+  el.textContent = m; el.className = 'toast show';
+  setTimeout(function(){ el.className = 'toast'; }, 2500);
+}
+function ini(n) { return (n||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2); }
+function greeting() { var h=new Date().getHours(); return h<12?t('goodmorning'):h<17?t('goodafternoon'):t('goodevening'); }
+function tclass(tier) { return {premium:'tp-p',standard:'tp-s',digital:'tp-d'}[tier]||'tp-d'; }
+function tlabel(tier) { return {premium:t('plan_p'),standard:t('plan_s'),digital:t('plan_d')}[tier]||tier; }
+function locale() { return LANG==='es'?'es-AR':'en-US'; }
+function phrase() { var p=LANG==='es'?PHRASES_ES:PHRASES_EN; return p[new Date().getDay()%p.length]; }
+
+// ── LANGUAGE ───────────────────────────────────────────────────────────────
+function setLang(lang) {
+  LANG = lang;
+  // Update ALL lang buttons
+  ['en','es'].forEach(function(l){
+    var a = document.getElementById('auth-lang-'+l);
+    var b = document.getElementById('app-lang-'+l);
+    if(a) a.className = 'lbtn ' + (l===lang?'on':'off');
+    if(b) b.className = 'alb ' + (l===lang?'on':'off');
+  });
+  // Auth screen text IDs
+  var textMap = {
+    'lang-tagline':'tagline',
+    'lang-signtitle':'signin',
+    'lang-emaillbl':'email',
+    'lang-passlbl':'password',
+    'lang-signinbtn':'signinbtn',
+    'lang-regtitle':'register',
+    'lang-trialline':'trialfree',
+    'lang-namelbl':'fullname',
+    'lang-iamlbl':'iama',
+    'lang-optathlete':'athlete',
+    'lang-optcoach':'coachopt',
+    'lang-termstext':'trialfree',
+    'lang-regbtn':'regbtn',
+    'lang-demodiv':'ortrydemo',
+    'lang-disc-enter':'discEnter',
+    'lang-disc-accept':'discAccept',
+    'lang-disc-title':'discTitle'
+  };
+  Object.keys(textMap).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.textContent = t(textMap[id]);
+  });
+  // HTML content with links
+  var newhere = document.getElementById('lang-newhere');
+  if(newhere) newhere.innerHTML = t('newhere') + ' <span onclick="showReg()">' + t('startfree') + '</span>';
+  var havacct = document.getElementById('lang-havacct');
+  if(havacct) havacct.innerHTML = t('alreadyhave') + ' <span onclick="showLogin()">' + t('signinlink') + '</span>';
+  // Logout button
+  var lo = document.getElementById('lang-logout');
+  if(lo) lo.textContent = t('signout');
+  // Rebuild nav if logged in
+  if(PROFILE) buildNav(PROFILE.role);
+  // Re-render current page
+  if(PAGE && PROFILE) renderPage(PAGE);
+  toast(lang==='es'?'Idioma: Espanol':'Language: English');
+}
+
+// ── SCREENS ────────────────────────────────────────────────────────────────
+function showAuth() {
+  document.getElementById('screen').innerHTML = buildAuth();
+}
+
+function buildAuth() {
+  return '<div class="auth-wrap"><div class="auth-box">' +
+    '<div class="auth-logo">FINISHER FLOW</div>' +
+    '<div class="auth-tag" id="lang-tagline">' + t('tagline') + '</div>' +
+    '<div class="lang-bar"><div class="lang-wrap">' +
+    '<button class="lbtn on" id="auth-lang-en" onclick="setLang(\'en\')">EN</button>' +
+    '<button class="lbtn off" id="auth-lang-es" onclick="setLang(\'es\')">ES</button>' +
+    '</div></div>' +
+    '<div class="err-box" id="auth-err"></div>' +
+    '<div id="form-login">' +
+    '<div class="auth-title" id="lang-signtitle">' + t('signin') + '</div>' +
+    '<div class="fld"><label id="lang-emaillbl">' + t('email') + '</label><input type="email" id="l-email" placeholder="you@email.com" autocomplete="email"></div>' +
+    '<div class="fld"><label id="lang-passlbl">' + t('password') + '</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"></div>' +
+    '<button class="btn-gold" id="lang-signinbtn" onclick="doLogin()">' + t('signinbtn') + '</button>' +
+    '<div class="auth-sw" id="lang-newhere">' + t('newhere') + ' <span onclick="showReg()">' + t('startfree') + '</span></div>' +
+    '<div class="auth-div" id="lang-demodiv">' + t('ortrydemo') + '</div>' +
+    '<div class="demo-grid">' +
+    '<button class="dbtn admin" onclick="demoLogin(\'admin\')">👑 Admin</button>' +
+    '<button class="dbtn other" onclick="demoLogin(\'coach\')">🏋 Coach</button>' +
+    '</div></div>' +
+    '<div id="form-reg" style="display:none">' +
+    '<div class="auth-title" id="lang-regtitle">' + t('register') + '</div>' +
+    '<div class="trial-box">🎉 <span id="lang-trialline">' + t('trialfree') + '</span></div>' +
+    '<div class="fld"><label id="lang-namelbl">' + t('fullname') + '</label><input type="text" id="r-name" autocomplete="name"></div>' +
+    '<div class="fld"><label>' + t('email') + '</label><input type="email" id="r-email" autocomplete="email"></div>' +
+    '<div class="fld"><label id="lang-passlbl2">' + t('password') + '</label><input type="password" id="r-pass" autocomplete="new-password"></div>' +
+    '<div class="fld"><label id="lang-iamlbl">' + t('iama') + '</label><select id="r-role"><option value="client" id="lang-optathlete">' + t('athlete') + '</option><option value="coach" id="lang-optcoach">' + t('coachopt') + '</option></select></div>' +
+    '<button class="btn-gold" id="lang-regbtn" onclick="doRegister()">' + t('regbtn') + '</button>' +
+    '<div class="auth-sw" id="lang-havacct">' + t('alreadyhave') + ' <span onclick="showLogin()">' + t('signinlink') + '</span></div>' +
+    '</div></div></div>';
+}
+
+function showDisc() {
+  document.getElementById('screen').innerHTML =
+    '<div class="disc-wrap"><div class="disc-box">' +
+    '<div style="font-size:2rem;text-align:center;margin-bottom:.5rem">❤️</div>' +
+    '<h2 id="lang-disc-title">' + t('discTitle') + '</h2>' +
+    '<p style="text-align:center;color:var(--tx2);margin-bottom:1rem">Please read carefully before starting.</p>' +
+    '<h3>Medical clearance</h3>' +
+    '<p>All training plans do not replace professional medical advice. Consult your doctor before starting.</p>' +
+    '<h3>Annual checks recommended</h3>' +
+    '<ul><li>Cardiac stress test (ECG)</li><li>Full blood panel: iron, ferritin, vitamin D, B12</li><li>Blood pressure and resting heart rate</li></ul>' +
+    '<h3>Stop immediately if you experience:</h3>' +
+    '<ul><li>Chest pain or tightness</li><li>Dizziness or fainting</li><li>Unusual shortness of breath</li><li>Heart palpitations during exercise</li></ul>' +
+    '<div class="disc-accept" id="disc-accept-box" onclick="toggleDisc()">' +
+    '<input type="checkbox" id="disc-chk">' +
+    '<span id="lang-disc-accept">' + t('discAccept') + '</span>' +
+    '</div>' +
+    '<button class="btn-gold" id="disc-enter" onclick="enterApp()" style="margin-top:.85rem;opacity:.4;pointer-events:none" id="lang-disc-enter">' + t('discEnter') + '</button>' +
+    '</div></div>';
+}
+
+function toggleDisc() {
+  var chk = document.getElementById('disc-chk');
+  chk.checked = !chk.checked;
+  DISC_CHECKED = chk.checked;
+  document.getElementById('disc-accept-box').className = 'disc-accept' + (chk.checked?' checked':'');
+  var btn = document.getElementById('disc-enter');
+  btn.style.opacity = chk.checked ? '1' : '.4';
+  btn.style.pointerEvents = chk.checked ? 'auto' : 'none';
+}
+
+function showApp() {
+  var role = PROFILE.role;
+  var navHtml = '';
+  (NAV[role]||NAV.client).forEach(function(it){
+    navHtml += '<div class="nav-item" id="ni-'+it.id+'" onclick="goTo(\''+it.id+'\')">'+it.i+' '+t(it.id)+'</div>';
+  });
+
+  document.getElementById('screen').innerHTML =
+    '<div class="app-layout">' +
+    '<aside class="sidebar" id="sidebar">' +
+    '<div class="sb-logo"><h1>FINISHER<br>FLOW</h1><p>Train · Think · Perform</p></div>' +
+    '<div class="sb-user"><div class="sb-av" id="sb-av">'+ini(PROFILE.full_name||PROFILE.name)+'</div>' +
+    '<div class="sb-info"><p id="sb-name">'+(PROFILE.full_name||PROFILE.name)+'</p>' +
+    '<span>'+(t('roles')[role]||role)+'</span></div></div>' +
+    '<nav class="sb-nav" id="sb-nav">'+navHtml+'</nav>' +
+    '<div class="sb-bottom">' +
+    '<div class="app-lang">' +
+    '<button class="alb on" id="app-lang-en" onclick="setLang(\'en\')">EN</button>' +
+    '<button class="alb off" id="app-lang-es" onclick="setLang(\'es\')">ES</button>' +
+    '</div>' +
+    '<button class="logout-btn" id="lang-logout" onclick="doLogout()">'+t('signout')+'</button>' +
+    '</div></aside>' +
+    '<main class="main-content" id="main-content">' +
+    '<div id="page-home" class="page"></div>' +
+    '<div id="page-training" class="page"></div>' +
+    '<div id="page-checkins" class="page"></div>' +
+    '<div id="page-mindset" class="page"></div>' +
+    '<div id="page-nutrition" class="page"></div>' +
+    '<div id="page-sleep" class="page"></div>' +
+    '<div id="page-progress" class="page"></div>' +
+    '<div id="page-courses" class="page"></div>' +
+    '<div id="page-clients" class="page"></div>' +
+    '<div id="page-client-detail" class="page"></div>' +
+    '<div id="page-intake" class="page"></div>' +
+    '<div id="page-access" class="page"></div>' +
+    '<div id="page-admin" class="page"></div>' +
+    '<div id="page-profile" class="page"></div>' +
+    '<div id="page-settings" class="page"></div>' +
+    '</main></div>';
+
+  document.getElementById('hamburger').style.display = 'flex';
+  goTo('home');
+}
+
+// ── AUTH ───────────────────────────────────────────────────────────────────
+function showErr(m) {
+  var e = document.getElementById('auth-err');
+  if(!e) return;
+  e.textContent = m; e.className = 'err-box show';
+  setTimeout(function(){ e.className = 'err-box'; }, 4000);
+}
+
+function showLogin() {
+  var fl = document.getElementById('form-login');
+  var fr = document.getElementById('form-reg');
+  if(fl) fl.style.display = '';
+  if(fr) fr.style.display = 'none';
+}
+
+function showReg() {
+  var fl = document.getElementById('form-login');
+  var fr = document.getElementById('form-reg');
+  if(fl) fl.style.display = 'none';
+  if(fr) fr.style.display = '';
+}
+
+async function doLogin() {
+  var email = document.getElementById('l-email').value.trim();
+  var pass = document.getElementById('l-pass').value;
+  if(!email||!pass){ showErr('Please fill in all fields'); return; }
+  var btn = document.getElementById('lang-signinbtn');
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    var res = await SB.auth.signInWithPassword({email:email, password:pass});
+    if(res.error) { showErr(res.error.message); }
+  } catch(e) { showErr('Login failed. Please try again.'); }
+  btn.disabled = false; btn.textContent = t('signinbtn');
+}
+
+async function doRegister() {
+  var name = document.getElementById('r-name').value.trim();
+  var email = document.getElementById('r-email').value.trim();
+  var pass = document.getElementById('r-pass').value;
+  var role = document.getElementById('r-role').value;
+  if(!name||!email||!pass){ showErr('Please fill in all fields'); return; }
+  var btn = document.getElementById('lang-regbtn');
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    var res = await SB.auth.signUp({email:email, password:pass, options:{data:{full_name:name, role:role}}});
+    if(res.error) { showErr(res.error.message); }
+    else {
+      toast('Welcome to Finisher Flow!');
+      await SB.auth.signInWithPassword({email:email, password:pass});
+    }
+  } catch(e) { showErr('Registration failed. Please try again.'); }
+  btn.disabled = false; btn.textContent = t('regbtn');
+}
+
+function demoLogin(role) {
+  USER = {id:'demo-'+role};
+  PROFILE = {id:'demo-'+role, full_name:role==='admin'?'Lorena Mela':'Christian C.', name:role==='admin'?'Lorena Mela':'Christian C.', role:role, email:role+'@finisherflow.com'};
+  document.getElementById('screen').innerHTML = '';
+  showApp();
+}
+
+function enterApp() {
+  if(!DISC_CHECKED){ toast('Please accept the health disclaimer first'); return; }
+  document.getElementById('screen').innerHTML = '';
+  showApp();
+}
+
+async function doLogout() {
+  try { if(SB) await SB.auth.signOut(); } catch(e){}
+  USER = null; PROFILE = null;
+  document.getElementById('hamburger').style.display = 'none';
+  closeSB();
+  showAuth();
+}
+
+async function loadProfile() {
+  try {
+    var res = await SB.from('profiles').select('*').eq('id', USER.id).single();
+    if(res.data) { PROFILE = res.data; return; }
+    var meta = USER.user_metadata || {};
+    var p = {id:USER.id, full_name:meta.full_name||USER.email, name:meta.full_name||USER.email, email:USER.email, role:meta.role||'client'};
+    await SB.from('profiles').upsert(p);
+    PROFILE = p;
+  } catch(e) {
+    var meta = USER.user_metadata || {};
+    PROFILE = {id:USER.id, full_name:meta.full_name||USER.email, name:meta.full_name||USER.email, email:USER.email, role:meta.role||'client'};
+  }
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function goTo(page) {
+  PAGE = page;
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  var ni = document.getElementById('ni-'+page);
+  if(ni) ni.classList.add('active');
+  var pg = document.getElementById('page-'+page);
+  if(pg) pg.classList.add('active');
+  renderPage(page);
+  if(window.innerWidth<=768) closeSB();
+}
+
+function buildNav(role) {
+  var nav = document.getElementById('sb-nav');
+  if(!nav) return;
+  nav.innerHTML = '';
+  (NAV[role]||NAV.client).forEach(function(it){
+    var d = document.createElement('div');
+    d.className = 'nav-item' + (PAGE===it.id?' active':'');
+    d.id = 'ni-'+it.id;
+    d.textContent = it.i + ' ' + t(it.id);
+    (function(id){ d.onclick = function(){ goTo(id); }; })(it.id);
+    nav.appendChild(d);
+  });
+}
+
+function toggleSB() {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('overlay');
+  if(!sb) return;
+  if(sb.classList.contains('open')) { sb.classList.remove('open'); ov.classList.remove('show'); }
+  else { sb.classList.add('open'); ov.classList.add('show'); }
+}
+function closeSB() {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('overlay');
+  if(sb) sb.classList.remove('open');
+  if(ov) ov.classList.remove('show');
+}
+
+// ── PAGE RENDERS ───────────────────────────────────────────────────────────
+function renderPage(page) {
+  var role = PROFILE && PROFILE.role;
+  var map = {
+    home: function(){ role==='client'?rClientHome():role==='coach'?rCoachHome():rAdminHome(); },
+    training: rTraining, checkins: rCheckins, mindset: rMindset,
+    nutrition: rNutrition, sleep: rSleep, progress: rProgress, courses: rCourses,
+    clients: rClients, 'client-detail': function(){ rClientDetail(); },
+    intake: rIntake, access: rAccess, admin: rAdmin,
+    profile: rProfile, settings: rSettings
+  };
+  if(map[page]) map[page]();
+}
+
+function el(id) { return document.getElementById('page-'+id); }
+function h(id, html) { var e=el(id); if(e) e.innerHTML=html; }
+
+function rAdminHome() {
+  h('home', '<div class="ph"><h2>'+greeting()+', LORENA</h2><p>'+new Date().toLocaleDateString(locale(),{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</p></div>' +
+  '<div class="g4" style="gap:.65rem;margin-bottom:1.25rem">' +
+  '<div class="stat"><label>'+t('clients')+'</label><div class="v gold">'+CLIENTS.length+'</div></div>' +
+  '<div class="stat"><label>'+t('sessions')+'</label><div class="v grn">12</div><div class="s">'+t('thisweek')+'</div></div>' +
+  '<div class="stat"><label>'+t('mood')+'</label><div class="v">4.2</div></div>' +
+  '<div class="stat"><label>MRR</label><div class="v gold">$1,840</div></div>' +
+  '</div>' +
+  '<div class="g2" style="gap:1rem">' +
+  '<div class="card"><div style="font-weight:600;margin-bottom:.85rem">'+t('clients')+'</div>' +
+  CLIENTS.map(function(c){ return '<div class="client-row" onclick="openClient('+c.id+')"><div class="cav">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+c.goal+'</div></div><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span></div>'; }).join('') +
+  '</div>' +
+  '<div><div class="card"><div style="font-weight:600;margin-bottom:.85rem">'+(LANG==='es'?'Acciones Rapidas':'Quick Actions')+'</div>' +
+  '<button class="btn p" style="width:100%;margin-bottom:.5rem" onclick="goTo(\'intake\')">'+t('newclient')+'</button>' +
+  '<button class="btn s" style="width:100%;margin-bottom:.5rem" onclick="goTo(\'clients\')">'+t('clients')+'</button>' +
+  '<button class="btn s" style="width:100%" onclick="goTo(\'admin\')">'+t('admin')+'</button>' +
+  '</div></div></div>');
+}
+
+function rCoachHome() {
+  h('home', '<div class="ph"><h2>'+greeting()+', CHRISTIAN</h2><p>'+new Date().toLocaleDateString(locale(),{weekday:'long',month:'long',day:'numeric'})+'</p></div>' +
+  '<div class="g3" style="gap:.65rem;margin-bottom:1.25rem">' +
+  '<div class="stat"><label>'+t('clients')+'</label><div class="v gold">'+CLIENTS.length+'</div></div>' +
+  '<div class="stat"><label>'+t('sessions')+'</label><div class="v grn">8</div></div>' +
+  '<div class="stat"><label>'+(LANG==='es'?'Alertas':'Alerts')+'</label><div class="v" style="color:var(--red)">1</div></div>' +
+  '</div>' +
+  '<div class="card"><div style="font-weight:600;margin-bottom:.85rem">'+t('tapmanage')+'</div>' +
+  CLIENTS.map(function(c){ var al=c.mood<3.5||c.sleep<7; return '<div class="client-row" onclick="openClient('+c.id+')"><div class="cav" style="background:'+(al?'var(--red)':'var(--gold)')+'">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+c.goal+' - '+c.km+'km/wk</div></div><span>'+(c.mood>=4?'😄':c.mood>=3?'🙂':'😕')+'</span>'+( al?'<span style="background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex-shrink:0">!</span>':'')+'</div>'; }).join('') +
+  '</div>');
+}
+
+function rClientHome() {
+  var emj = ['😔','😕','😐','🙂','😄'];
+  var sicons = {morning:'🌅',midday:'☀️',afternoon:'🌆',night:'🌙'};
+  var slbls_en = {morning:'Morning',midday:'Midday',afternoon:'Afternoon',night:'Night'};
+  var slbls_es = {morning:'Manana',midday:'Mediodia',afternoon:'Tarde',night:'Noche'};
+  var slbls = LANG==='es'?slbls_es:slbls_en;
+  var slotsHtml = SLOTS.map(function(s){ return '<div style="flex:1;background:var(--sf2);border:1px solid '+(s.rec?'var(--grn)':s.recording?'var(--red)':'var(--bd)')+';border-radius:10px;padding:.65rem .3rem;text-align:center;cursor:pointer" onclick="toggleRec(\''+s.id+'\')" ><div style="font-size:1.3rem">'+sicons[s.id]+'</div><div style="font-size:.6rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px">'+slbls[s.id]+'</div><div style="font-size:.58rem;color:'+(s.rec?'var(--grn)':s.recording?'var(--red)':'var(--tx3)')+'">'+( s.recording?(LANG==='es'?'Grabando...':'Recording...'):s.rec?'✓':(LANG==='es'?'Toca':'Tap'))+'</div></div>'; }).join('');
+  var chkItems=[{i:'🏃',en:'Morning training',es:'Entrenamiento'},
+    {i:'🥗',en:'Nutrition plan',es:'Plan de nutricion'},
+    {i:'😴',en:"Last nights sleep",es:'Sueno de anoche'}];
+  var chkHtml = chkItems.map(function(item){ return '<div style="display:flex;align-items:flex-start;gap:9px;padding:.55rem 0;border-bottom:1px solid var(--bd)"><div style="width:20px;height:20px;border-radius:4px;border:2px solid var(--bd);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="this.style.background=this.style.background?\'\':\' var(--gold)\';this.style.borderColor=this.style.background?\'\':\' var(--gold)\'"></div><div><div style="font-size:.85rem;font-weight:500">'+item.i+' '+(LANG==='es'?item.es:item.en)+'</div><div style="display:flex;gap:.3rem;margin-top:.25rem">'+emj.map(function(e){ return '<button style="background:transparent;border:1px solid var(--bd);border-radius:5px;padding:.2rem .3rem;font-size:.9rem;cursor:pointer" onclick="toast(\'ok\')">'+e+'</button>'; }).join('')+'</div></div></div>'; }).join('');
+  h('home',
+    '<div class="ph"><h2>'+greeting()+', '+((PROFILE.full_name||PROFILE.name||'').split(' ')[0]||'').toUpperCase()+'</h2><p>'+new Date().toLocaleDateString(locale(),{weekday:'long',month:'long',day:'numeric'})+'</p></div>' +
+    '<div class="phrase-card"><div style="font-size:.65rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:.6rem">✦ '+t('todaysphrase')+'</div><div style="font-size:1rem;line-height:1.65;font-weight:300;font-style:italic">'+phrase()+'</div><div style="font-size:.75rem;color:var(--tx3);margin-top:.65rem">— Finisher Flow</div></div>' +
+    '<button onclick="openSkipModal()" style="width:100%;padding:.65rem;border-radius:10px;border:1px solid rgba(226,75,74,.3);background:rgba(226,75,74,.06);color:#f08080;font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:.85rem">🚫 '+t('cantrain')+'</button>' +
+    '<div class="g2" style="gap:1rem"><div>' +
+    '<div class="card" style="margin-bottom:1rem"><div style="font-weight:600;margin-bottom:.65rem">'+t('checklist')+'</div>'+chkHtml+'</div>' +
+    '<div class="g4" style="gap:.5rem"><div class="stat"><label>'+t('sessions')+'</label><div class="v gold">5</div><div class="s">'+t('thisweek')+'</div></div><div class="stat"><label>'+t('mood')+'</label><div class="v grn">4.2</div></div><div class="stat"><label>'+t('sleepl')+'</label><div class="v">7.8h</div></div><div class="stat"><label>'+t('streak')+'</label><div class="v gold">14</div><div class="s">'+t('days')+'</div></div></div>' +
+    '</div><div>' +
+    '<div class="card" style="margin-bottom:1rem"><div style="font-weight:600;margin-bottom:.5rem">'+t('howfeeling')+'</div><div style="display:flex;gap:.35rem">'+emj.map(function(e,i){ return '<button style="flex:1;padding:.55rem;border:2px solid var(--bd);border-radius:8px;background:transparent;font-size:1.2rem;cursor:pointer" onclick="toast(\'ok\')">'+e+'</button>'; }).join('')+'</div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.5rem">'+t('dailycheckins')+'</div><div style="font-size:.72rem;color:var(--tx3);margin-bottom:.55rem">'+(LANG==='es'?'Toca para grabar':'Tap to record')+'</div><div style="display:flex;gap:.4rem;margin-bottom:.65rem">'+slotsHtml+'</div><textarea style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.65rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical;min-height:55px;margin-bottom:.5rem" placeholder="'+(LANG==='es'?'Como te sentis...':'How are you feeling...')+'"></textarea><button class="btn p sm" onclick="toast(\'ok\')">'+t('savecheckin')+'</button></div>' +
+    '</div></div>');
+}
+
+function toggleRec(id) {
+  var s = SLOTS.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var samples_en=['Feeling good, ready for training.','A bit tired, legs feel heavy.','Energy is back.','Exhausted today.'];
+  var samples_es=['Me siento bien, lista.','Un poco cansada.','Recupere la energia.','Agotada hoy.'];
+  var idx = SLOTS.indexOf(s);
+  if(s.recording){ s.recording=false; s.rec=true; s.tr=(LANG==='es'?samples_es:samples_en)[idx]; toast('ok'); }
+  else if(!s.rec){ s.recording=true; toast(LANG==='es'?'Grabando...':'Recording...'); }
+  else { s.rec=false; s.tr=''; toast(LANG==='es'?'Borrado':'Cleared'); }
+  renderPage(PAGE);
+}
+
+// Skip/cant train modal
+var SKIP_REASONS_EN=['Too busy / work','Not feeling well','Sick','Injury / pain','Travel','Family emergency','Mental fatigue','Other'];
+var SKIP_REASONS_ES=['Muy ocupado/a','No me siento bien','Enfermo/a','Lesion / dolor','Viaje','Emergencia familiar','Fatiga mental','Otro'];
+var skipReason=''; var skipDays=2;
+
+function openSkipModal() {
+  var reasons = LANG==='es'?SKIP_REASONS_ES:SKIP_REASONS_EN;
+  var modal = document.createElement('div');
+  modal.id = 'skip-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:1.75rem;width:100%;max-width:420px">' +
+    '<div style="font-size:1.2rem;font-weight:700;margin-bottom:.25rem">'+t('whydialog')+'</div>' +
+    '<div style="font-size:.82rem;color:var(--tx2);margin-bottom:1.25rem">'+t('notifycoach')+'</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:1rem">' +
+    reasons.map(function(r,i){ return '<button id="sr-'+i+'" onclick="selectReason(\''+r+'\','+i+')" style="padding:.55rem .7rem;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:.78rem;cursor:pointer;text-align:left">'+r+'</button>'; }).join('') +
+    '</div>' +
+    '<div style="font-size:.8rem;font-weight:600;margin-bottom:.6rem">'+t('estimatedays')+'</div>' +
+    '<div style="display:flex;gap:.4rem;margin-bottom:1.25rem">' +
+    [1,2,3,4,5,7].map(function(d){ return '<button id="sd-'+d+'" onclick="selectSkipDays('+d+')" style="flex:1;padding:.5rem;border-radius:8px;border:1px solid '+(d===2?'var(--gold)':'var(--bd)')+';background:'+(d===2?'rgba(201,168,76,.15)':'transparent')+';color:'+(d===2?'var(--gold)':'var(--tx2)')+';font-size:.82rem;font-weight:600;cursor:pointer">'+d+'</button>'; }).join('') +
+    '</div>' +
+    '<div style="display:flex;gap:.6rem">' +
+    '<button id="skip-confirm" onclick="confirmSkip()" style="flex:1;padding:.65rem;background:var(--gold);border:none;border-radius:8px;color:#0C0C0F;font-weight:600;cursor:pointer;opacity:.4;pointer-events:none">'+(LANG==='es'?'Notificar Coach':'Notify Coach')+'</button>' +
+    '<button onclick="closeSkipModal()" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--bd);border-radius:8px;color:var(--tx2);cursor:pointer">'+(LANG==='es'?'Cancelar':'Cancel')+'</button>' +
+    '</div></div>';
+  document.body.appendChild(modal);
+}
+
+function selectReason(r, idx) {
+  skipReason = r;
+  document.querySelectorAll('[id^="sr-"]').forEach(function(b){ b.style.borderColor='var(--bd)'; b.style.background='transparent'; b.style.color='var(--tx2)'; });
+  var btn = document.getElementById('sr-'+idx);
+  if(btn){ btn.style.borderColor='var(--gold)'; btn.style.background='rgba(201,168,76,.15)'; btn.style.color='var(--gold)'; }
+  var cb = document.getElementById('skip-confirm');
+  if(cb){ cb.style.opacity='1'; cb.style.pointerEvents='auto'; }
+}
+
+function selectSkipDays(d) {
+  skipDays = d;
+  document.querySelectorAll('[id^="sd-"]').forEach(function(b){ b.style.borderColor='var(--bd)'; b.style.background='transparent'; b.style.color='var(--tx2)'; });
+  var btn = document.getElementById('sd-'+d);
+  if(btn){ btn.style.borderColor='var(--gold)'; btn.style.background='rgba(201,168,76,.15)'; btn.style.color='var(--gold)'; }
+}
+
+function confirmSkip() {
+  closeSkipModal();
+  for(var i=0;i<Math.min(skipDays, CLIENTS.length && CLIENTS[0].plan.length);i++){
+    CLIENTS[0].plan[i] = {d:CLIENTS[0].plan[i].d,t:'rest',title:LANG==='es'?'Descanso':'Rest / Recovery',det:(LANG==='es'?'Descanso por: ':'Rest due to: ')+skipReason,note:LANG==='es'?'Plan ajustado':'Plan adjusted by coach'};
+  }
+  toast(t('skippedplan'));
+}
+
+function closeSkipModal() {
+  var m = document.getElementById('skip-modal');
+  if(m) m.remove();
+}
+
+function rTraining() {
+  var c = CLIENTS[0];
+  var today = new Date(); var mon = new Date(today); mon.setDate(today.getDate()-today.getDay()+1+WK*7);
+  var days_en=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var days_es=['Lun','Mar','Mie','Jue','Vie','Sab','Dom'];
+  var days = LANG==='es'?days_es:days_en;
+  var tt = {run:LANG==='es'?'Correr':'Run',gym:'Gym',rest:LANG==='es'?'Descanso':'Rest'};
+  var rows = c.plan.map(function(s,i){ var d=new Date(mon); d.setDate(mon.getDate()+i); var iT=d.toDateString()===today.toDateString()&&WK===0; var bc=s.t==='run'?'rb':s.t==='gym'?'gb':'xb'; return '<div class="day-row"><div class="dlbl'+(iT?' today':'')+'">'+days[i]+'<br>'+d.getDate()+'</div><div class="sess-block"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem"><span style="font-weight:600;font-size:.88rem">'+s.title+'</span><span class="bdg '+bc+'">'+tt[s.t]+'</span></div><div style="font-size:.78rem;color:var(--tx2)">'+s.det+'</div>'+(s.note?'<div style="font-size:.72rem;color:var(--gold);margin-top:.2rem">💬 '+s.note+'</div>':'')+'</div></div>'; }).join('');
+  h('training', '<div class="ph"><h2>'+t('training').toUpperCase()+'</h2></div>' +
+    '<div class="nb red">🫀 '+(LANG==='es'?'Control medico anual recomendado.':'Annual health check recommended.')+'</div>' +
+    '<div class="wknav"><button class="wkbtn" onclick="WK--;renderPage(\'training\')">← '+(LANG==='es'?'Ant':'Prev')+'</button><span style="flex:1;text-align:center;font-size:.88rem;font-weight:500">'+mon.toLocaleDateString(locale(),{month:'long',day:'numeric'})+'</span><button class="wkbtn" onclick="WK++;renderPage(\'training\')">'+(LANG==='es'?'Sig':'Next')+' →</button></div>' +
+    rows);
+}
+
+function rCheckins() {
+  var sdata = {morning:{icon:'🌅',en:'Morning',es:'Manana'},midday:{icon:'☀️',en:'Midday',es:'Mediodia'},afternoon:{icon:'🌆',en:'Afternoon',es:'Tarde'},night:{icon:'🌙',en:'Night',es:'Noche'}};
+  var emj = ['😔','😕','😐','🙂','😄'];
+  var html = SLOTS.map(function(s){ var sd=sdata[s.id]; return '<div style="background:var(--sf2);border:1px solid '+(s.rec?'var(--grn)':s.recording?'var(--red)':'var(--bd)')+';border-radius:12px;padding:1rem;margin-bottom:.85rem"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem"><div><div style="font-size:1.4rem">'+sd.icon+'</div><div style="font-size:.82rem;font-weight:600;margin-top:.15rem">'+(LANG==='es'?sd.es:sd.en)+'</div></div><button onclick="toggleRec(\''+s.id+'\')" style="padding:.45rem .85rem;border-radius:8px;border:1px solid '+(s.recording?'var(--red)':s.rec?'var(--grn)':'var(--gold)')+';background:transparent;color:'+(s.recording?'var(--red)':s.rec?'var(--grn)':'var(--gold)')+';cursor:pointer;font-size:.82rem;font-weight:600">'+(s.recording?(LANG==='es'?'Parar':'Stop'):s.rec?(LANG==='es'?'Grabado':'Recorded'):'🎙 '+(LANG==='es'?'Grabar':'Record'))+'</button></div><div style="display:flex;gap:.35rem;margin-bottom:.6rem">'+emj.map(function(e){ return '<button style="flex:1;padding:.4rem;border:1px solid var(--bd);border-radius:6px;background:transparent;font-size:1rem;cursor:pointer" onclick="toast(\'ok\')">'+e+'</button>'; }).join('')+'</div><textarea style="width:100%;background:transparent;border:1px solid var(--bd);border-radius:7px;padding:.5rem .7rem;color:var(--tx);font-size:.82rem;outline:none;resize:none;min-height:55px" placeholder="'+(LANG==='es'?'O escribe una nota...':'Or type a note...')+'"></textarea>'+(s.tr?'<div style="font-size:.75rem;color:var(--tx2);background:var(--sf);border-left:2px solid var(--grn);padding:.4rem .65rem;margin-top:.5rem;font-style:italic">'+s.tr+'</div>':'')+'</div>'; }).join('');
+  h('checkins', '<div class="ph"><h2>'+t('checkins').toUpperCase()+'</h2></div>'+html+'<button class="btn p" onclick="toast(\'ok\')">'+t('savecheckin')+'</button>');
+}
+
+function rMindset() {
+  h('mindset', '<div class="ph"><h2>'+t('mindset').toUpperCase()+'</h2></div>' +
+    '<div class="g2" style="gap:1rem">' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.75rem">'+(LANG==='es'?'Desafio Semanal':'Weekly Challenge')+'</div>' +
+    '<div style="background:var(--sf2);border-left:3px solid var(--gold);padding:.85rem;border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.65">'+(LANG==='es'?'Antes de cada sesion esta semana, toma 2 minutos para visualizar que la completas.':'"Before each session this week, take 2 minutes to visualize completing it."')+'</div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.5rem">'+(LANG==='es'?'Diario':'Journal')+'</div>' +
+    '<textarea style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.65rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical;min-height:80px" placeholder="'+(LANG==='es'?'Escribe tu reflexion...':'Write your reflection...')+'"></textarea>' +
+    '<button class="btn p sm" style="margin-top:.5rem" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar':'Save')+'</button></div>' +
+    '</div>');
+}
+
+function rNutrition() {
+  h('nutrition', '<div class="ph"><h2>'+t('nutrition').toUpperCase()+'</h2></div>' +
+    '<div class="nb blue">'+( LANG==='es'?'Solo recomendaciones generales. Consulta siempre un nutricionista profesional.':'General recommendations only. Always consult a qualified nutritionist.')+'</div>' +
+    '<div class="g2" style="gap:1rem">' +
+    '<div><div style="background:var(--sf2);border-radius:10px;padding:.9rem;margin-bottom:.65rem"><div style="font-size:.82rem;font-weight:600;margin-bottom:.4rem">'+(LANG==='es'?'Pre-Entrenamiento':'Pre-Training')+'</div><div style="font-size:.8rem;color:var(--tx2);line-height:1.75">'+(LANG==='es'?'1-2h antes: carbohidratos + proteina liviana. Avena + banana, tostada + huevos.':'1-2h before: carbs + light protein. Oats + banana, toast + eggs.')+'</div></div>' +
+    '<div style="background:var(--sf2);border-radius:10px;padding:.9rem"><div style="font-size:.82rem;font-weight:600;margin-bottom:.4rem">'+(LANG==='es'?'Post-Entrenamiento':'Post-Training')+'</div><div style="font-size:.8rem;color:var(--tx2);line-height:1.75">'+(LANG==='es'?'Dentro de 30min: proteina + carbos. 20-30g de proteina para la recuperacion.':'Within 30min: protein + carbs. Aim 20-30g protein for recovery.')+'</div></div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.6rem">'+(LANG==='es'?'Hidratacion Diaria':'Daily Hydration')+'</div>' +
+    '<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem"><span style="font-size:.85rem;color:var(--tx2)">'+(LANG==='es'?'Hoy:':'Today:')+'</span><input type="number" step="0.1" value="1.8" style="width:58px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.4rem .65rem;color:var(--tx);font-size:.85rem;outline:none"><span style="font-size:.85rem;color:var(--tx2)">L / 2.5L</span></div>' +
+    '<div class="pb-wrap"><div class="pb" style="width:72%;background:var(--blu)"></div></div></div>' +
+    '</div>');
+}
+
+function rSleep() {
+  h('sleep', '<div class="ph"><h2>'+t('sleepl').toUpperCase()+'</h2></div>' +
+    '<div class="g2" style="gap:1rem"><div class="card">' +
+    '<div style="font-weight:600;margin-bottom:.9rem">'+(LANG==='es'?'Registrar Sueno de Anoche':'Log Last Nights Sleep')+'</div>' +
+    '<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.65rem"><label style="font-size:.82rem;color:var(--tx2);width:110px">'+(LANG==='es'?'Hora de dormir':'Bedtime')+'</label><input type="time" value="22:30" style="background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .7rem;color:var(--tx);font-size:.85rem;outline:none"></div>' +
+    '<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.65rem"><label style="font-size:.82rem;color:var(--tx2);width:110px">'+(LANG==='es'?'Hora de despertar':'Wake time')+'</label><input type="time" value="06:30" style="background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .7rem;color:var(--tx);font-size:.85rem;outline:none"></div>' +
+    '<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.65rem"><label style="font-size:.82rem;color:var(--tx2);width:110px">'+(LANG==='es'?'Horas dormidas':'Hours slept')+'</label><input type="number" step="0.5" value="8" style="width:60px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .7rem;color:var(--tx);font-size:.85rem;outline:none"></div>' +
+    '<button class="btn p sm" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar':'Save')+'</button></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.65rem">'+(LANG==='es'?'Consejos del Coach':'Coach Tips')+'</div><div style="font-size:.82rem;line-height:1.85;color:var(--tx2)">'+(LANG==='es'?'8h antes de tiradas largas. Sin pantallas 1h antes de dormir. Habitacion a 18-20C. Horarios consistentes.':'8h on days before long runs. No screens 1h before sleep. Room 18-20C. Consistent schedule.')+'</div></div></div>');
+}
+
+function rProgress() {
+  var areas_en = [{l:'Training',p:83,c:'var(--grn)'},{l:'Mindset',p:72,c:'var(--gold)'},{l:'Nutrition',p:65,c:'var(--blu)'},{l:'Sleep',p:87,c:'var(--grn)'}];
+  var areas_es = [{l:'Entrenamiento',p:83,c:'var(--grn)'},{l:'Mentalidad',p:72,c:'var(--gold)'},{l:'Nutricion',p:65,c:'var(--blu)'},{l:'Sueno',p:87,c:'var(--grn)'}];
+  var areas = LANG==='es'?areas_es:areas_en;
+  h('progress', '<div class="ph"><h2>'+t('progress').toUpperCase()+'</h2></div>' +
+    '<div class="g4" style="gap:.65rem;margin-bottom:1.25rem">' +
+    '<div class="stat"><label>Flow Score</label><div class="v gold">76</div><div class="s">/100</div></div>' +
+    '<div class="stat"><label>'+t('sessions')+'</label><div class="v grn">5</div></div>' +
+    '<div class="stat"><label>'+t('mood')+'</label><div class="v">4.2</div></div>' +
+    '<div class="stat"><label>'+t('sleepl')+'</label><div class="v">7.8h</div></div>' +
+    '</div>' +
+    '<div class="card">'+areas.map(function(a){ return '<div style="margin-bottom:.85rem"><div class="pb-lbl"><span>'+a.l+'</span><span>'+a.p+'%</span></div><div class="pb-wrap"><div class="pb" style="width:'+a.p+'%;background:'+a.c+'"></div></div></div>'; }).join('')+'</div>');
+}
+
+function rCourses() {
+  h('courses', '<div class="ph"><h2>'+t('courses').toUpperCase()+'</h2><p>'+t('learnmore')+'</p></div>' +
+    '<div class="g3">' +
+    COURSES.map(function(c){ return '<div class="course-card"><div class="ct">'+c.e+'</div><div style="padding:.85rem"><div style="font-size:.62rem;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.25rem">'+c.cat+'</div><div style="font-weight:600;font-size:.88rem;margin-bottom:.25rem">'+(LANG==='es'?c.title_es:c.title_en)+'</div><div style="font-size:.75rem;color:var(--tx2);margin-bottom:.5rem">'+(LANG==='es'?c.desc_es:c.desc_en)+'</div><div style="font-size:1.1rem;font-weight:900;color:var(--gold)">USD '+c.pr+'</div></div></div>'; }).join('') +
+    '</div>' +
+    '<div class="card" style="margin-top:1.5rem"><div style="font-weight:600;margin-bottom:.4rem">'+t('coursesfeedback')+'</div>' +
+    '<textarea style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.65rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical;min-height:70px;margin-bottom:.65rem" placeholder="'+(LANG==='es'?'Ej: Elongacion para corredores...':'e.g. Stretching for runners...')+'"></textarea>' +
+    '<button class="btn p sm" onclick="toast(\'ok\')">'+t('cfsend')+'</button></div>');
+}
+
+function rClients() {
+  h('clients', '<div class="ph"><h2>'+t('clients').toUpperCase()+'</h2><p>'+t('tapmanage')+'</p></div>' +
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:1rem"><button class="btn p sm" onclick="goTo(\'intake\')">'+t('newclient')+'</button></div>' +
+    '<div class="card" style="padding:0;overflow:hidden">' +
+    CLIENTS.map(function(c){ return '<div class="client-row" onclick="openClient('+c.id+')"><div class="cav">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+c.goal+' - '+c.level+' - '+c.km+'km/wk</div></div><div style="margin-right:.5rem">'+(c.mood>=4?'😄':c.mood>=3?'🙂':'😕')+'</div><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span></div>'; }).join('') +
+    '</div>');
+}
+
+function openClient(id) {
+  CURRENT_CLIENT = CLIENTS.find(function(c){ return c.id===id; });
+  CLIENT_TAB = 'plan';
+  goTo('client-detail');
+}
+
+function rClientDetail() {
+  var c = CURRENT_CLIENT;
+  if(!c){ h('client-detail','<button class="btn s sm" onclick="goTo(\'clients\')">'+t('backclients')+'</button>'); return; }
+  var tabs = [{k:'plan',l:t('trainingplan')},{k:'profile',l:t('profiletab')},{k:'stats',l:t('stats')},{k:'access',l:t('accesstab')}];
+  var tabHtml = '<div class="tabs">' + tabs.map(function(tb){ return '<button class="tab'+(CLIENT_TAB===tb.k?' active':'')+'" onclick="CLIENT_TAB=\''+tb.k+'\';rClientDetail()">'+tb.l+'</button>'; }).join('') + '</div>';
+  var content = '';
+  if(CLIENT_TAB==='plan'){
+    var days_en=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var days_es=['Lun','Mar','Mie','Jue','Vie','Sab','Dom'];
+    var days=LANG==='es'?days_es:days_en;
+    var tt={run:LANG==='es'?'Correr':'Run',gym:'Gym',rest:LANG==='es'?'Descanso':'Rest'};
+    content = c.plan.map(function(s,i){ var bc=s.t==='run'?'rb':s.t==='gym'?'gb':'xb'; return '<div class="day-row"><div class="dlbl">'+days[i]+'</div><div class="sess-block"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem"><span style="font-weight:600;font-size:.88rem">'+s.title+'</span><div style="display:flex;gap:.4rem"><span class="bdg '+bc+'">'+tt[s.t]+'</span><button class="edit-btn" onclick="editSession('+i+')">✏️</button></div></div><div style="font-size:.78rem;color:var(--tx2)">'+s.det+'</div>'+(s.note?'<div style="font-size:.72rem;color:var(--gold);margin-top:.2rem">💬 '+s.note+'</div>':'')+'</div></div>'; }).join('') +
+      '<div style="display:flex;gap:.5rem;margin-top:.75rem"><button class="btn p sm" onclick="toast(\'ok\')">'+t('saveplan')+'</button></div>';
+  } else if(CLIENT_TAB==='profile'){
+    content = '<div class="g2"><div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Nombre':'Name')+'</label><input type="text" value="'+c.name+'"></div>' +
+      '<div class="fld"><label>Email</label><input type="email" value="'+c.email+'"></div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Meta':'Goal')+'</label><input type="text" value="'+c.goal+'"></div>' +
+      '</div><div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Plan':'Tier')+'</label><select><option value="digital"'+(c.tier==='digital'?' selected':'')+'>'+(LANG==='es'?'Digital':'Digital')+'</option><option value="standard"'+(c.tier==='standard'?' selected':'')+'>'+(LANG==='es'?'Estandar':'Standard')+'</option><option value="premium"'+(c.tier==='premium'?' selected':'')+'>'+(LANG==='es'?'Premium':'Premium')+'</option></select></div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Lesiones':'Injuries')+'</label><input type="text" value="'+c.injuries+'"></div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Km/semana':'Weekly KM')+'</label><input type="number" value="'+c.km+'"></div>' +
+      '</div></div><button class="btn p sm" onclick="toast(\'ok\')">'+t('savechanges')+'</button>';
+  } else if(CLIENT_TAB==='stats'){
+    content = '<div class="g4" style="gap:.65rem;margin-bottom:1rem">' +
+      '<div class="stat"><label>'+t('mood')+'</label><div class="v gold">'+c.mood+'</div></div>' +
+      '<div class="stat"><label>'+t('sleepl')+'</label><div class="v grn">'+c.sleep+'h</div></div>' +
+      '<div class="stat"><label>'+t('sessions')+'</label><div class="v">'+c.sessions+'</div></div>' +
+      '<div class="stat"><label>'+t('streak')+'</label><div class="v gold">'+c.streak+'</div></div>' +
+      '</div>' +
+      '<div class="card"><div style="font-size:.85rem;line-height:2;color:var(--tx2)">' +
+      (LANG==='es'?'Km/semana':'Weekly km')+': <strong style="color:var(--tx)">'+c.km+'</strong><br>' +
+      (LANG==='es'?'Objetivo':'Target')+': <strong style="color:var(--tx)">'+c.target+'</strong></div></div>';
+  } else if(CLIENT_TAB==='access'){
+    var roles=['admin','coach','performance_coach','nutritionist'];
+    var rLabels=t('roles');
+    var dtypes_en=[['training','🏃 Training'],['nutrition','🥗 Nutrition'],['mindset','🧘 Mindset'],['sleep','😴 Sleep'],['checkins','🎙 Check-ins']];
+    var dtypes_es=[['training','🏃 Entrenamiento'],['nutrition','🥗 Nutricion'],['mindset','🧘 Mentalidad'],['sleep','😴 Sueno'],['checkins','🎙 Check-ins']];
+    var dtypes=LANG==='es'?dtypes_es:dtypes_en;
+    if(!c.access) c.access={training:['admin','coach'],nutrition:['admin'],mindset:['admin','coach'],sleep:['admin'],checkins:['admin','coach']};
+    content = '<div class="nb gold">'+(LANG==='es'?'Elegir quien puede ver los datos de '+c.name:'Choose who can see data for '+c.name)+'</div>' +
+      '<div class="card">' +
+      dtypes.map(function(dt){ return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--bd);flex-wrap:wrap;gap:.5rem"><span>'+dt[1]+'</span><div style="display:flex;gap:.4rem;flex-wrap:wrap">' + roles.map(function(r){ var isOn=(c.access[dt[0]]||[]).indexOf(r)>=0; return '<button class="acc-chip'+(isOn?' on':'')+'" onclick="toggleAcc(\''+dt[0]+'\',\''+r+'\')">'+(isOn?'✓ ':'')+rLabels[r]+'</button>'; }).join('') + '</div></div>'; }).join('') +
+      '</div><button class="btn p sm" style="margin-top:.75rem" onclick="toast(\'ok\')">'+t('savechanges')+'</button>';
+  }
+  h('client-detail',
+    '<button class="btn s sm" style="margin-bottom:.85rem" onclick="goTo(\'clients\')">← '+t('backclients')+'</button>' +
+    '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">' +
+    '<div class="cav" style="width:50px;height:50px;font-size:1rem">'+c.ini+'</div>' +
+    '<div style="flex:1"><div style="font-size:1.4rem;font-weight:900;letter-spacing:1px">'+c.name+'</div>' +
+    '<div style="font-size:.82rem;color:var(--tx2);margin-top:.1rem">'+c.goal+' - '+c.level+' - '+c.km+'km/wk</div>' +
+    '<div style="margin-top:.4rem;display:flex;gap:.4rem;flex-wrap:wrap"><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span><span style="font-size:.75rem;color:var(--tx2)">'+c.email+'</span></div></div>' +
+    '<div style="font-size:.82rem;color:var(--tx2)">😊 '+c.mood+' - 😴 '+c.sleep+'h</div></div>' +
+    tabHtml + content);
+}
+
+function editSession(idx) {
+  var c = CURRENT_CLIENT; var s = c.plan[idx];
+  h('client-detail',
+    '<button class="btn s sm" style="margin-bottom:.85rem" onclick="CLIENT_TAB=\'plan\';rClientDetail()">← '+t('trainingplan')+'</button>' +
+    '<div class="ph"><h2>'+(LANG==='es'?'EDITAR SESION':'EDIT SESSION')+'</h2></div>' +
+    '<div class="card" style="max-width:460px">' +
+    '<div class="fld"><label>'+(LANG==='es'?'Titulo':'Title')+'</label><input type="text" id="es-t" value="'+s.title+'"></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Tipo':'Type')+'</label><select id="es-tp"><option value="run"'+(s.t==='run'?' selected':'')+'>'+(LANG==='es'?'Correr':'Run')+'</option><option value="gym"'+(s.t==='gym'?' selected':'')+'>Gym</option><option value="rest"'+(s.t==='rest'?' selected':'')+'>'+(LANG==='es'?'Descanso':'Rest')+'</option></select></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Detalles':'Details')+'</label><input type="text" id="es-d" value="'+s.det+'"></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Nota del Coach':'Coach Note')+'</label><input type="text" id="es-n" value="'+s.note+'" placeholder="'+(LANG==='es'?'Opcional...':'Optional...')+'"></div>' +
+    '<div style="display:flex;gap:.5rem"><button class="btn p sm" onclick="saveSession('+idx+')">'+t('savechanges')+'</button><button class="btn s sm" onclick="CLIENT_TAB=\'plan\';rClientDetail()">'+(LANG==='es'?'Cancelar':'Cancel')+'</button></div>' +
+    '</div>');
+}
+
+function saveSession(idx) {
+  var c = CURRENT_CLIENT;
+  c.plan[idx].title = document.getElementById('es-t').value;
+  c.plan[idx].t = document.getElementById('es-tp').value;
+  c.plan[idx].det = document.getElementById('es-d').value;
+  c.plan[idx].note = document.getElementById('es-n').value;
+  CLIENT_TAB = 'plan'; toast('ok'); rClientDetail();
+}
+
+function toggleAcc(dtype, role) {
+  if(!CURRENT_CLIENT||role==='admin') return;
+  if(!CURRENT_CLIENT.access) CURRENT_CLIENT.access={};
+  if(!CURRENT_CLIENT.access[dtype]) CURRENT_CLIENT.access[dtype]=['admin'];
+  var arr=CURRENT_CLIENT.access[dtype]; var idx=arr.indexOf(role);
+  if(idx>=0) arr.splice(idx,1); else arr.push(role);
+  rClientDetail();
+}
+
+function rIntake() {
+  h('intake', '<div class="ph"><h2>'+(LANG==='es'?'NUEVO CLIENTE':'NEW CLIENT')+'</h2></div>' +
+    '<div class="card">' +
+    '<div class="stitle">'+(LANG==='es'?'Informacion Personal':'Personal Information')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Nombre Completo':'Full Name')+'</label><input type="text" id="nc-name"></div><div class="fld"><label>Email</label><input type="email" id="nc-email"></div></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Salud':'Health')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Altura (cm)':'Height (cm)')+'</label><input type="number"></div><div class="fld"><label>'+(LANG==='es'?'Peso (kg)':'Weight (kg)')+'</label><input type="number"></div></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Condiciones Medicas':'Medical Conditions')+'</label><textarea style="min-height:50px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.5rem .7rem;color:var(--tx);font-size:.85rem;outline:none;width:100%;resize:vertical"></textarea></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Lesiones':'Injuries')+'</label><input type="text"></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Metas y Plan':'Goals and Service')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Meta Principal':'Primary Goal')+'</label><select><option>'+(LANG==='es'?'Correr primera maraton':'Run first marathon')+'</option><option>'+(LANG==='es'?'Mejorar 10K':'Improve 10K')+'</option></select></div><div class="fld"><label>'+(LANG==='es'?'Plan':'Plan')+'</label><select><option>'+(LANG==='es'?'Digital':'Digital')+'</option><option>'+(LANG==='es'?'Estandar':'Standard')+'</option><option>Premium</option></select></div></div>' +
+    '<div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-top:.5rem">' +
+    '<button class="btn p" onclick="saveIntake()">'+(LANG==='es'?'Guardar Cliente':'Save Client')+'</button>' +
+    '</div></div>');
+}
+
+function saveIntake() {
+  var name=document.getElementById('nc-name').value.trim();
+  var email=document.getElementById('nc-email').value.trim();
+  if(!name){ toast(LANG==='es'?'Ingresa un nombre':'Please enter a name'); return; }
+  CLIENTS.push({id:CLIENTS.length+1,name:name,ini:ini(name),email:email||'',goal:'Run first marathon',level:'Beginner',tier:'digital',km:0,sessions:0,mood:0,sleep:0,streak:0,injuries:'None',target:'',diet:'Omnivore',plan:[{d:'Mon',t:'run',title:'Easy Run 5km',det:'Z2 30min',note:'Welcome!'},{d:'Tue',t:'rest',title:'Rest',det:'Complete rest',note:''},{d:'Wed',t:'run',title:'Easy Run 4km',det:'Z2 25min',note:''},{d:'Thu',t:'gym',title:'Strength',det:'Light weights 45min',note:''},{d:'Fri',t:'run',title:'Easy Run 3km',det:'Z2 20min',note:''},{d:'Sat',t:'rest',title:'Rest',det:'Rest',note:''},{d:'Sun',t:'run',title:'Long Run 6km',det:'Z2 35min',note:''}]});
+  toast(LANG==='es'?'Cliente guardado':'Client saved'); goTo('clients');
+}
+
+function rAccess() {
+  h('access', '<div class="ph"><h2>'+t('access').toUpperCase()+'</h2></div>' +
+    '<div class="nb gold">'+(LANG==='es'?'Selecciona un cliente para configurar el acceso a sus datos.':'Select a client to configure data access.')+'</div>' +
+    '<div class="card" style="padding:0;overflow:hidden">' +
+    CLIENTS.map(function(c){ return '<div class="client-row" onclick="CURRENT_CLIENT=CLIENTS.find(function(x){return x.id==='+c.id+'});CLIENT_TAB=\'access\';goTo(\'client-detail\')"><div class="cav">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+(LANG==='es'?'Toca para configurar':'Click to configure')+'</div></div><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span></div>'; }).join('') +
+    '</div>');
+}
+
+function rAdmin() {
+  h('admin', '<div class="ph"><h2>'+t('admin').toUpperCase()+'</h2></div>' +
+    '<div class="g4" style="gap:.65rem;margin-bottom:1.25rem">' +
+    '<div class="stat"><label>'+t('clients')+'</label><div class="v gold">'+CLIENTS.length+'</div></div>' +
+    '<div class="stat"><label>Coaches</label><div class="v grn">2</div></div>' +
+    '<div class="stat"><label>'+(LANG==='es'?'Cursos':'Courses')+'</label><div class="v">'+COURSES.length+'</div></div>' +
+    '<div class="stat"><label>MRR</label><div class="v gold">$1,840</div></div>' +
+    '</div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.5rem">'+t('editprices')+'</div>' +
+    ['digital','standard','premium'].map(function(p){ return '<div style="padding:.75rem 0;border-bottom:1px solid var(--bd)"><div style="font-weight:600;margin-bottom:.25rem">'+t('plan_'+p[0])+'</div><div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:.35rem"><div style="display:flex;align-items:center;gap:.5rem"><span style="font-size:.75rem;color:var(--tx3)">USD</span><input type="number" value="'+PLANS[p].pm+'" style="width:75px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.4rem .65rem;color:var(--tx);font-size:.88rem;outline:none"><span style="font-size:.75rem;color:var(--tx3)">'+t('monthly')+'</span></div><div style="display:flex;align-items:center;gap:.5rem"><span style="font-size:.75rem;color:var(--tx3)">USD</span><input type="number" value="'+PLANS[p].pa+'" style="width:75px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.4rem .65rem;color:var(--tx);font-size:.88rem;outline:none"><span style="font-size:.75rem;color:var(--tx3)">'+t('annual')+'</span></div></div></div>'; }).join('') +
+    '<button class="btn p sm" style="margin-top:.75rem" onclick="toast(\'ok\')">'+t('saveprices')+'</button></div>');
+}
+
+function rProfile() {
+  h('profile', '<div class="ph"><h2>'+t('profile').toUpperCase()+'</h2></div>' +
+    '<div class="nb gold">'+(LANG==='es'?'Tu coach configuro tu perfil. Por favor revisa y confirma que todo esta correcto.':'Your coach set up your profile. Please review and confirm everything is correct.')+'</div>' +
+    '<div class="card"><div class="stitle">'+(LANG==='es'?'Informacion Personal':'Personal Info')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Nombre':'Name')+'</label><input type="text" value="'+(PROFILE.full_name||PROFILE.name||'')+'"></div><div class="fld"><label>Email</label><input type="email" value="'+(PROFILE.email||'')+'"></div></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Salud y Carrera':'Health and Running')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Altura (cm)':'Height (cm)')+'</label><input type="number" placeholder="165"></div><div class="fld"><label>'+(LANG==='es'?'Peso (kg)':'Weight (kg)')+'</label><input type="number" placeholder="62"></div></div>' +
+    '<div class="g2"><div class="fld"><label>FC '+(LANG==='es'?'Reposo':'Resting')+'</label><input type="number" id="rhr" placeholder="58" onchange="calcZones()"></div><div class="fld"><label>FC '+(LANG==='es'?'Maxima':'Max')+'</label><input type="number" id="mhr" placeholder="185" onchange="calcZones()"></div></div>' +
+    '<div id="zones-display"></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Mis Metas':'My Goals')+'</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.85rem">' +
+    (LANG==='es'?['Primera 5K','Primera 10K','Mejorar 10K','Primera media maraton','Sub 2h media','Primera maraton','Mejorar maraton','Ultra maraton','Trail running','Mejorar velocidad','Retorno tras lesion','Perdida de peso']:['First 5K','First 10K','Improve 10K','First half marathon','Sub 2h half','First marathon','Improve marathon','Ultra marathon','Trail running','Improve speed','Return after injury','Weight loss']).map(function(g){ return '<button class="acc-chip" onclick="this.classList.toggle(\'on\')">'+g+'</button>'; }).join('') +
+    '</div>' +
+    '<button class="btn p" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar Perfil':'Save Profile')+'</button></div>');
+}
+
+function calcZones() {
+  var rhr = parseInt(document.getElementById('rhr').value);
+  var mhr = parseInt(document.getElementById('mhr').value);
+  var d = document.getElementById('zones-display');
+  if(rhr && mhr && d) {
+    var z1=Math.round(rhr+(mhr-rhr)*.5), z2=Math.round(rhr+(mhr-rhr)*.6), z3=Math.round(rhr+(mhr-rhr)*.7), z4=Math.round(rhr+(mhr-rhr)*.8), z5=Math.round(rhr+(mhr-rhr)*.9);
+    d.innerHTML = '<div class="nb blue" style="font-size:.75rem"><strong>'+(LANG==='es'?'Zonas de FC:':'HR Zones:')+'</strong> Z1: '+z1+' - Z2: '+z2+' - Z3: '+z3+' - Z4: '+z4+' - Z5: '+z5+' bpm</div>';
+  }
+}
+
+function rSettings() {
+  h('settings', '<div class="ph"><h2>'+t('settings').toUpperCase()+'</h2></div>' +
+    '<div class="g2" style="gap:1rem"><div class="card"><div style="font-weight:600;margin-bottom:.9rem">'+(LANG==='es'?'Cuenta':'Account')+'</div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Nombre':'Name')+'</label><input type="text" value="'+(PROFILE.full_name||PROFILE.name||'')+'"></div>' +
+    '<div class="fld"><label>Email</label><input type="email" value="'+(PROFILE.email||'')+'"></div>' +
+    '<button class="btn p sm" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar':'Save')+'</button>' +
+    '<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--bd)"><button class="btn d sm" onclick="doLogout()">'+(LANG==='es'?'Cerrar Sesion':'Sign Out')+'</button></div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.5rem;color:var(--gold)">'+(LANG==='es'?'Prueba Gratuita Activa':'Free Trial Active')+'</div>' +
+    '<div style="font-size:.82rem;color:var(--tx2);margin-bottom:.85rem">'+(LANG==='es'?'Tu mes gratis termina en 30 dias. Elige un plan para continuar:':'Your free month ends in 30 days. Choose a plan to continue:')+'</div>' +
+    ['digital','standard','premium'].map(function(p){ return '<button onclick="toast(\'ok\')" style="width:100%;padding:.55rem;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;color:var(--tx2);font-size:.8rem;cursor:pointer;text-align:left;margin-bottom:.35rem">'+t('plan_'+p[0])+' — USD '+PLANS[p].pm+t('monthly')+'</button>'; }).join('') +
+    '</div></div>');
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  setTimeout(function(){
+    document.getElementById('splash').classList.add('gone');
+  }, 1200);
+
+  setTimeout(function(){
+    if(!SB) { showAuth(); return; }
+    SB.auth.getSession().then(function(res){
+      var session = res.data && res.data.session;
+      if(session) {
+        USER = session.user;
+        loadProfile().then(function(){
+          if(PROFILE.role==='client') {
+            showDisc();
+          } else {
+            showApp();
+          }
+        });
+      } else {
+        showAuth();
+      }
+    }).catch(function(){ showAuth(); });
+  }, 1400);
+
+  SB && SB.auth.onAuthStateChange(function(event, session){
+    if(event==='SIGNED_IN' && session && !USER) {
+      USER = session.user;
+      loadProfile().then(function(){
+        if(PROFILE.role==='client') {
+          showDisc();
+        } else {
+          showApp();
+        }
+      });
+    }
+  });
+});
+</script>
+</body>
+</html>
