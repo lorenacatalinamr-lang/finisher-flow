@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>FinisherFlow</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--bg:#0C0C0F;--sf:#141418;--sf2:#1C1C22;--gold:#C9A84C;--g2:#E8C97A;--tx:#F0EDE8;--tx2:#9B9890;--tx3:#5A5856;--red:#E24B4A;--grn:#1D9E75;--blu:#378ADD;--bd:#2A2A32}
+html,body{min-height:100%;background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+#splash{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .6s}
+#splash.gone{opacity:0;pointer-events:none}
+.slogo{font-size:clamp(1.8rem,7vw,3rem);font-weight:900;letter-spacing:0;color:var(--gold)}
+.ssub{color:var(--tx3);font-size:.75rem;letter-spacing:3px;text-transform:uppercase;margin-top:.4rem}
+#screen{min-height:100vh}
+.hidden{display:none!important}
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.auth-box{background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:2rem;width:100%;max-width:400px}
+.auth-logo{font-size:clamp(1.8rem,7vw,2.4rem);font-weight:900;letter-spacing:0;color:var(--gold);text-align:center;margin-bottom:.2rem}
+.auth-tag{text-align:center;color:var(--tx3);font-size:.7rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:.85rem}
+.lang-bar{display:flex;justify-content:center;margin-bottom:1.25rem}
+.lang-wrap{display:flex;gap:4px;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:3px}
+.lbtn{padding:.35rem .9rem;border:none;border-radius:5px;font-size:.82rem;font-weight:700;cursor:pointer;transition:.15s;letter-spacing:.5px}
+.lbtn.on{background:var(--gold);color:#0C0C0F}
+.lbtn.off{background:transparent;color:var(--tx2)}
+.auth-title{font-size:1.1rem;font-weight:600;text-align:center;margin-bottom:1.25rem}
+.fld{margin-bottom:.9rem}
+.fld label{display:block;font-size:.68rem;color:var(--tx2);letter-spacing:.5px;margin-bottom:.35rem;text-transform:uppercase}
+.fld input,.fld select{width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:9px;padding:.7rem .9rem;color:var(--tx);font-size:.95rem;outline:none;-webkit-appearance:none;transition:.2s}
+.fld input:focus,.fld select:focus{border-color:var(--gold)}
+.fld select option{background:var(--sf2)}
+.btn-gold{width:100%;padding:.85rem;background:var(--gold);border:none;border-radius:10px;color:#0C0C0F;font-size:1rem;font-weight:700;cursor:pointer;margin-bottom:.75rem;transition:.2s}
+.btn-gold:active{background:var(--g2)}
+.auth-sw{text-align:center;font-size:.85rem;color:var(--tx2);margin-bottom:.75rem}
+.auth-sw span{color:var(--gold);cursor:pointer;text-decoration:underline}
+.auth-div{text-align:center;color:var(--tx3);font-size:.78rem;margin:.65rem 0;position:relative}
+.auth-div::before,.auth-div::after{content:'';position:absolute;top:50%;width:40%;height:1px;background:var(--bd)}
+.auth-div::before{left:0}.auth-div::after{right:0}
+.demo-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+.dbtn{padding:.75rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;text-align:center;border:none;transition:.2s}
+.dbtn.admin{background:rgba(201,168,76,.15);border:2px solid var(--gold);color:var(--gold)}
+.dbtn.other{background:var(--sf2);border:1px solid var(--bd);color:var(--tx2)}
+.trial-box{background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:8px;padding:.65rem;font-size:.78rem;color:var(--gold);text-align:center;margin-bottom:1rem}
+.err-box{background:rgba(226,75,74,.1);border:1px solid rgba(226,75,74,.3);border-radius:8px;padding:.65rem .85rem;font-size:.82rem;color:#f08080;margin-bottom:.85rem;display:none}
+.err-box.show{display:block}
+/* DISCLAIMER */
+.disc-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1.5rem}
+.disc-box{background:var(--sf);border:1px solid var(--bd);border-radius:20px;padding:2rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto}
+.disc-box h2{font-size:1.6rem;font-weight:900;color:var(--red);text-align:center;margin-bottom:.5rem}
+.disc-box h3{font-size:.88rem;font-weight:600;color:var(--gold);margin:1rem 0 .35rem}
+.disc-box p,.disc-box li{font-size:.82rem;color:var(--tx2);line-height:1.7}
+.disc-box ul{padding-left:1.2rem;margin-bottom:.5rem}
+.disc-accept{display:flex;align-items:flex-start;gap:.75rem;background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:1rem;margin-top:1.25rem;cursor:pointer;transition:.2s}
+.disc-accept.checked{border-color:var(--gold)}
+.disc-accept input{margin-top:3px;flex-shrink:0;accent-color:var(--gold)}
+.disc-accept span{font-size:.82rem;line-height:1.5}
+/* APP */
+.app-layout{display:flex;min-height:100vh}
+.sidebar{width:225px;background:var(--sf);border-right:1px solid var(--bd);position:fixed;top:0;bottom:0;left:0;display:flex;flex-direction:column;z-index:100;transition:transform .3s;overflow-y:auto}
+.sb-logo{padding:1.25rem 1.25rem 1.25rem 1rem;border-bottom:1px solid var(--bd)}
+.sb-logo h1{font-size:1.4rem;font-weight:900;letter-spacing:1px;color:var(--gold);line-height:1.1;white-space:nowrap}
+.sb-logo p{font-size:.62rem;color:var(--tx3);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+.sb-user{padding:.7rem 1.25rem;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--bd)}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:#0C0C0F;flex-shrink:0}
+.sb-info p{font-size:.82rem;font-weight:500}
+.sb-info span{font-size:.68rem;color:var(--gold);text-transform:uppercase;letter-spacing:.5px}
+.sb-nav{flex:1;padding:.5rem 0;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:9px;padding:.6rem 1.25rem;cursor:pointer;font-size:.85rem;color:var(--tx2);border-left:3px solid transparent;transition:.15s;user-select:none}
+.nav-item:hover{background:var(--sf2);color:var(--tx)}
+.nav-item.active{background:var(--sf2);color:var(--gold);border-left-color:var(--gold)}
+.sb-bottom{padding:.75rem 1.25rem;border-top:1px solid var(--bd)}
+.app-lang{display:flex;gap:3px;background:var(--sf2);border-radius:7px;padding:3px;margin-bottom:.6rem}
+.alb{flex:1;padding:.3rem;border:none;background:transparent;color:var(--tx2);cursor:pointer;border-radius:5px;font-size:.75rem;font-weight:700;transition:.15s;letter-spacing:.5px}
+.alb.on{background:var(--gold);color:#0C0C0F}
+.logout-btn{width:100%;padding:.5rem;background:transparent;border:1px solid var(--bd);border-radius:8px;color:var(--tx2);font-size:.82rem;cursor:pointer;transition:.2s}
+.logout-btn:hover{border-color:var(--red);color:var(--red)}
+.main-content{margin-left:225px;padding:1.75rem;min-height:100vh}
+.page{display:none}.page.active{display:block}
+.hamburger{display:none;position:fixed;top:.75rem;left:.75rem;z-index:200;background:var(--sf);border:1px solid var(--bd);border-radius:9px;padding:.55rem .65rem;cursor:pointer;color:var(--tx);font-size:1.1rem;line-height:1}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:90}
+.overlay.show{display:block}
+/* CARDS & COMPONENTS */
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.25rem}
+.ph h2{font-size:1.8rem;font-weight:900;letter-spacing:2px;margin-bottom:.15rem}
+.ph p{color:var(--tx2);font-size:.85rem;margin-bottom:1.5rem}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:.85rem}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:.65rem}
+.stat{background:var(--sf2);border-radius:9px;padding:.75rem 1rem}
+.stat label{font-size:.6rem;color:var(--tx3);letter-spacing:.5px;text-transform:uppercase;display:block;margin-bottom:.25rem}
+.stat .v{font-size:1.4rem;font-weight:900;letter-spacing:.5px;line-height:1.2}
+.stat .v.gold{color:var(--gold)}.stat .v.grn{color:var(--grn)}
+.stat .s{font-size:.72rem;color:var(--tx2);margin-top:.15rem}
+.btn{padding:.55rem 1.1rem;border-radius:8px;font-size:.85rem;font-weight:600;cursor:pointer;border:none;transition:.2s}
+.btn.p{background:var(--gold);color:#0C0C0F}.btn.p:active{background:var(--g2)}
+.btn.s{background:transparent;border:1px solid var(--bd);color:var(--tx2)}.btn.s:hover{border-color:var(--gold);color:var(--gold)}
+.btn.d{background:transparent;border:1px solid var(--red);color:var(--red)}
+.btn.sm{padding:.4rem .75rem;font-size:.78rem}
+.nb{border-radius:8px;padding:.65rem .85rem;font-size:.78rem;line-height:1.6;margin-bottom:.85rem}
+.nb.gold{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.2);color:var(--gold)}
+.nb.blue{background:rgba(55,138,221,.07);border:1px solid rgba(55,138,221,.2);color:#7ab8f5}
+.nb.red{background:rgba(226,75,74,.07);border:1px solid rgba(226,75,74,.2);color:#f08080}
+.nb.green{background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.2);color:#4ac99b}
+.pb-wrap{background:var(--sf2);border-radius:20px;height:7px;overflow:hidden;margin-top:.35rem}
+.pb{height:100%;border-radius:20px;transition:.6s}
+.pb-lbl{display:flex;justify-content:space-between;font-size:.78rem;color:var(--tx2);margin-bottom:.2rem}
+.client-row{display:flex;align-items:center;gap:10px;padding:.75rem 1rem;border-bottom:1px solid var(--bd);cursor:pointer;transition:.15s}
+.client-row:hover{background:var(--sf2)}
+.client-row:last-child{border-bottom:none}
+.cav{width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#0C0C0F;flex-shrink:0}
+.ci{flex:1}.cn{font-weight:500;font-size:.9rem}.cm{font-size:.75rem;color:var(--tx2);margin-top:1px}
+.tier-pill{font-size:.68rem;padding:.15rem .55rem;border-radius:20px}
+.tp-p{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3)}
+.tp-s{background:rgba(55,138,221,.15);color:var(--blu);border:1px solid rgba(55,138,221,.3)}
+.tp-d{background:rgba(91,88,86,.15);color:var(--tx2);border:1px solid var(--bd)}
+.bdg{padding:.2rem .55rem;border-radius:20px;font-size:.68rem;font-weight:500}
+.rb{background:rgba(55,138,221,.15);color:var(--blu);border:1px solid rgba(55,138,221,.3)}
+.gb{background:rgba(201,168,76,.15);color:var(--gold);border:1px solid rgba(201,168,76,.3)}
+.xb{background:rgba(91,88,86,.15);color:var(--tx2);border:1px solid var(--bd)}
+.phrase-card{background:linear-gradient(135deg,#0f0d00,#1c1800);border:1px solid rgba(201,168,76,.4);border-radius:14px;padding:1.5rem;margin-bottom:1rem}
+.course-card{background:var(--sf);border:1px solid var(--bd);border-radius:12px;overflow:hidden;cursor:pointer;transition:.2s}
+.course-card:hover{border-color:var(--gold)}
+.ct{height:85px;background:linear-gradient(135deg,#0f0d00,#1c1800);display:flex;align-items:center;justify-content:center;font-size:2.5rem}
+.wknav{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
+.wkbtn{background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.4rem .75rem;color:var(--tx2);cursor:pointer;font-size:.82rem;transition:.15s}
+.wkbtn:hover{border-color:var(--gold);color:var(--gold)}
+.day-row{display:grid;grid-template-columns:48px 1fr;gap:.65rem;margin-bottom:.5rem;align-items:start}
+.dlbl{font-size:.72rem;color:var(--tx2);padding-top:.35rem;text-align:right}
+.dlbl.today{color:var(--gold);font-weight:700}
+.sess-block{background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:.85rem}
+.edit-btn{background:transparent;border:1px solid var(--bd);border-radius:5px;padding:.2rem .5rem;color:var(--tx3);font-size:.68rem;cursor:pointer;transition:.15s}
+.edit-btn:hover{border-color:var(--gold);color:var(--gold)}
+.stitle{font-size:1rem;font-weight:700;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin:1.25rem 0 .75rem;padding-bottom:.4rem;border-bottom:1px solid var(--bd)}
+.stitle:first-child{margin-top:0}
+.acc-chip{padding:.2rem .6rem;border-radius:20px;font-size:.7rem;cursor:pointer;border:1px solid var(--bd);background:transparent;color:var(--tx3);transition:.15s}
+.acc-chip.on{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
+.tabs{display:flex;gap:3px;background:var(--sf2);padding:3px;border-radius:9px;margin-bottom:1.25rem;flex-wrap:wrap;width:fit-content}
+.tab{padding:.42rem 1rem;border:none;background:transparent;color:var(--tx2);cursor:pointer;border-radius:7px;font-size:.82rem;transition:.15s}
+.tab.active{background:var(--sf);color:var(--tx)}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--sf);border:1px solid var(--gold);border-radius:10px;padding:.7rem 1.25rem;color:var(--tx);font-size:.85rem;z-index:9999;opacity:0;transform:translateY(16px);transition:.3s;pointer-events:none;max-width:260px;text-align:center}
+.toast.show{opacity:1;transform:translateY(0)}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main-content{margin-left:0;padding:1rem;padding-top:4rem}
+  .hamburger{display:flex;align-items:center}
+  .g2,.g3{grid-template-columns:1fr}
+  .g4{grid-template-columns:1fr 1fr}
+  .day-row{grid-template-columns:42px 1fr}
+}
+@media(min-width:769px){.sidebar{transform:translateX(0)}}
+</style>
+</head>
+<body>
+<div id="splash"><div class="slogo">FinisherFlow</div><div class="ssub">Train · Think · Perform</div></div>
+<div id="screen"></div>
+<div class="toast" id="toast"></div>
+<button class="hamburger" id="hamburger" onclick="toggleSB()" style="display:none">☰</button>
+<div class="overlay" id="overlay" onclick="closeSB()"></div>
+
+<script>
+// ── SUPABASE ───────────────────────────────────────────────────────────────
+var SB = null;
+try {
+  SB = supabase.createClient(
+    'https://mxyynsbxvxbmncdewtoy.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14eXluc2J4dnhibW5jZGV3dG95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4MjAyMDAsImV4cCI6MjA5NTM5NjIwMH0.nxVgQlAvSxsw5fUV_behyQKCCflQWaxRjZecnkSpJ-c'
+  );
+} catch(e) { console.warn('Supabase init failed', e); }
+
+// ── STATE ──────────────────────────────────────────────────────────────────
+var LANG = 'en';
+var USER = null;
+var PROFILE = null;
+var PAGE = 'home';
+var CLIENT_TAB = 'plan';
+var WK = 0;
+var CURRENT_CLIENT = null;
+var CURRENT_COURSE = null;
+var DISC_CHECKED = false;
+var SLOTS = [
+  {id:'morning',rec:false,recording:false,tr:''},
+  {id:'midday',rec:false,recording:false,tr:''},
+  {id:'afternoon',rec:false,recording:false,tr:''},
+  {id:'night',rec:false,recording:false,tr:''}
+];
+
+// ── TRANSLATIONS ───────────────────────────────────────────────────────────
+var TX = {
+  en: {
+    tagline:'Your complete coaching platform',
+    signin:'Sign In', register:'Start Your Free Trial',
+    email:'Email', password:'Password', fullname:'Full Name',
+    signinbtn:'Sign In', regbtn:'Start Free Trial →',
+    newhere:'New here?', startfree:'Start your free trial',
+    alreadyhave:'Already have an account?', signinlink:'Sign In',
+    iama:'I am a...', athlete:'Athlete / Client', coachopt:'Coach',
+    trialfree:'1 month free — no credit card needed. Cancel anytime.',
+    ortrydemo:'or try demo',
+    discTitle:'Health and Safety',
+    discEnter:'Enter FinisherFlow →',
+    discAccept:'I have read and understood this. I confirm I am medically fit to begin training, or I will consult my doctor first.',
+    signout:'Sign Out',
+    home:'Home', training:'Training', checkins:'Check-ins', mindset:'Mindset',
+    nutrition:'Nutrition', sleep:'Sleep', progress:'Progress', courses:'Courses',
+    clients:'My Clients', intake:'New Intake', access:'Access Control',
+    admin:'Admin Panel', profile:'My Profile', settings:'Settings',
+    goodmorning:'GOOD MORNING', goodafternoon:'GOOD AFTERNOON', goodevening:'GOOD EVENING',
+    todaysphrase:"Today's Phrase", checklist:'Daily Checklist',
+    howfeeling:'How are you feeling?', dailycheckins:'Daily Check-ins',
+    savecheckin:'Save Check-in', sessions:'Sessions', mood:'Mood',
+    sleepl:'Sleep', streak:'Streak', thisweek:'this week', avg:'avg', days:'days',
+    cantrain:'I cannot train today', notifycoach:'Notify coach and adjust plan',
+    whydialog:'Why cannot you train?', estimatedays:'Estimated days off:',
+    skippedplan:'Plan adjusted. Coach notified.',
+    roles:{admin:'Admin',coach:'Training Coach',performance_coach:'Performance Coach',nutritionist:'Nutritionist',client:'Client'},
+    plan_d:'Digital', plan_s:'Standard', plan_p:'Premium',
+    backclients:'Back to Clients', trainingplan:'Training Plan',
+    profiletab:'Profile', stats:'Stats', accesstab:'Access',
+    saveplan:'Save Plan', savechanges:'Save Changes',
+    learnmore:'Learn · Train · Grow', coursesfeedback:'What course would you like next?',
+    cfsend:'Send Suggestion', free:'Free', buycourse:'Buy Course',
+    newclient:'+ New Client', tapmanage:'Tap a client to manage their plan.',
+    editprices:'Edit prices — changes save immediately.',
+    monthly:'/ month', annual:'/ year', saveprices:'Save Prices'
+  },
+  es: {
+    tagline:'Tu plataforma de coaching completa',
+    signin:'Iniciar Sesion', register:'Empieza tu Prueba Gratis',
+    email:'Email', password:'Contrasena', fullname:'Nombre completo',
+    signinbtn:'Iniciar Sesion', regbtn:'Empezar Prueba Gratis',
+    newhere:'Sos nuevo/a?', startfree:'Empieza tu prueba gratis',
+    alreadyhave:'Ya tenes cuenta?', signinlink:'Iniciia sesion',
+    iama:'Soy...', athlete:'Atleta / Cliente', coachopt:'Coach',
+    trialfree:'1 mes gratis. Sin tarjeta. Cancela cuando quieras.',
+    ortrydemo:'o proba el demo',
+    discTitle:'Salud y Seguridad',
+    discEnter:'Entrar a FinisherFlow',
+    discAccept:'Lei y entendi esto. Confirmo que estoy en condiciones de comenzar un programa de entrenamiento.',
+    signout:'Cerrar Sesion',
+    home:'Inicio', training:'Entrenamiento', checkins:'Check-ins', mindset:'Mentalidad',
+    nutrition:'Nutricion', sleep:'Sueno', progress:'Progreso', courses:'Cursos',
+    clients:'Mis Clientes', intake:'Nuevo Cliente', access:'Control de Acceso',
+    admin:'Panel Admin', profile:'Mi Perfil', settings:'Configuracion',
+    goodmorning:'BUENOS DIAS', goodafternoon:'BUENAS TARDES', goodevening:'BUENAS NOCHES',
+    todaysphrase:'Frase del Dia', checklist:'Lista del Dia',
+    howfeeling:'Como te sentis hoy?', dailycheckins:'Check-ins Diarios',
+    savecheckin:'Guardar Check-in', sessions:'Sesiones', mood:'Animo',
+    sleepl:'Sueno', streak:'Racha', thisweek:'esta semana', avg:'prom', days:'dias',
+    cantrain:'Hoy no puedo entrenar', notifycoach:'Avisar al coach y ajustar plan',
+    whydialog:'Por que no podes entrenar?', estimatedays:'Dias estimados:',
+    skippedplan:'Plan ajustado. Coach notificado.',
+    roles:{admin:'Admin',coach:'Coach de Entrenamiento',performance_coach:'Coach de Rendimiento',nutritionist:'Nutricionista',client:'Cliente'},
+    plan_d:'Digital', plan_s:'Estandar', plan_p:'Premium',
+    backclients:'Volver a Clientes', trainingplan:'Plan de Entrenamiento',
+    profiletab:'Perfil', stats:'Estadisticas', accesstab:'Acceso',
+    saveplan:'Guardar Plan', savechanges:'Guardar Cambios',
+    learnmore:'Aprender - Entrenar - Crecer', coursesfeedback:'Que curso te gustaria ver?',
+    cfsend:'Enviar Sugerencia', free:'Gratis', buycourse:'Comprar Curso',
+    newclient:'+ Nuevo Cliente', tapmanage:'Toca un cliente para gestionar su plan.',
+    editprices:'Edita los precios. Los cambios se guardan de inmediato.',
+    monthly:'/ mes', annual:'/ ano', saveprices:'Guardar Precios'
+  }
+};
+
+function t(k) {
+  var v = TX[LANG] && TX[LANG][k];
+  return v !== undefined ? v : (TX.en[k] || k);
+}
+
+// ── DATA ───────────────────────────────────────────────────────────────────
+var CLIENTS = [
+  {id:1,name:'Maria Garcia',ini:'MG',email:'maria@email.com',goal:'Run first marathon',level:'Intermediate',tier:'premium',km:45,sessions:5,mood:4.2,sleep:7.8,streak:14,injuries:'None',target:'Buenos Aires Marathon Oct 2026',diet:'Omnivore',
+   plan:[
+    {d:'Mon',t:'run',title:'Easy Run 8km',det:'Z2 - 45min - Conversational',note:'Keep HR under 145',completed:false,
+     routine:[{type:'Warm-up',desc:'Easy jog + dynamic stretching',duration:'10min'},{type:'Main',desc:'Easy run Z2 - conversational pace',duration:'35min'},{type:'Cool-down',desc:'Walk + static stretch',duration:'5min'}]},
+    {d:'Tue',t:'gym',title:'Strength - Legs',det:'Squats, lunges, deadlifts - 60min',note:'Focus on form',completed:false,
+     routine:[{exercise:'Squat',sets:'4',reps:'12',load:'Bodyweight or light bar'},{exercise:'Romanian Deadlift',sets:'3',reps:'10',load:'Light-moderate'},{exercise:'Reverse Lunge',sets:'3',reps:'10 each',load:'Bodyweight'},{exercise:'Glute Bridge',sets:'3',reps:'15',load:'Bodyweight'},{exercise:'Calf Raise',sets:'3',reps:'20',load:'Bodyweight'},{exercise:'Plank',sets:'3',reps:'45 sec',load:''}]},
+    {d:'Wed',t:'run',title:'Tempo Run 6km',det:'Z3-4 - 35min - Marathon pace',note:'',completed:false,
+     routine:[{type:'Warm-up',desc:'Easy jog',duration:'10min'},{type:'Tempo',desc:'Z3-4 - marathon race pace - controlled effort',duration:'20min'},{type:'Cool-down',desc:'Easy jog + stretch',duration:'5min'}]},
+    {d:'Thu',t:'rest',title:'Rest / Recovery',det:'Stretching and foam rolling',note:'',completed:false,routine:[]},
+    {d:'Fri',t:'run',title:'Intervals 8x400m',det:'Z4-5 - 60sec recovery between reps',note:'',completed:false,
+     routine:[{type:'Warm-up',desc:'Easy jog + strides',duration:'15min'},{type:'Intervals',desc:'8 x 400m at Z4-5 pace with 60sec rest',duration:'25min'},{type:'Cool-down',desc:'Easy jog + full stretch',duration:'10min'}]},
+    {d:'Sat',t:'gym',title:'Strength - Upper + Core',det:'Push/pull + core stability - 50min',note:'',completed:false,
+     routine:[{exercise:'Push-up',sets:'4',reps:'12',load:'Bodyweight'},{exercise:'Dumbbell Row',sets:'3',reps:'12 each',load:'Moderate'},{exercise:'Shoulder Press',sets:'3',reps:'10',load:'Light-moderate'},{exercise:'Dead Bug',sets:'3',reps:'10 each',load:''},{exercise:'Russian Twist',sets:'3',reps:'20',load:'Light'},{exercise:'Bird Dog',sets:'3',reps:'10 each',load:''}]},
+    {d:'Sun',t:'run',title:'Long Run 18km',det:'Z2 - 100-120min - Easy effort',note:'Hydrate every 20min',completed:false,
+     routine:[{type:'Easy start',desc:'First 5km very easy - Z1-2',duration:'30min'},{type:'Main',desc:'Steady Z2 - conversational - no pushing',duration:'70min'},{type:'Last km',desc:'Walk - hydrate - stretch',duration:'10min'}]}
+   ]},
+  {id:2,name:'Pablo Hernandez',ini:'PH',email:'pablo@email.com',goal:'Improve 10K time',level:'Beginner',tier:'standard',km:25,sessions:3,mood:3.8,sleep:7.1,streak:7,injuries:'Left ankle sprain',target:'10K Aug 2026',diet:'Omnivore',
+   plan:[
+    {d:'Mon',t:'run',title:'Easy Run 5km',det:'Z2 - 30min - Very easy',note:'',completed:false,
+     routine:[{type:'Warm-up',desc:'5min walk + light jog',duration:'5min'},{type:'Main',desc:'Easy jog Z2 - very comfortable pace',duration:'25min'},{type:'Cool-down',desc:'Walk + stretch ankles',duration:'5min'}]},
+    {d:'Tue',t:'rest',title:'Rest',det:'Complete rest',note:'',completed:false,routine:[]},
+    {d:'Wed',t:'run',title:'Intervals 6x200m',det:'Z4 - 90sec recovery',note:'Watch the ankle',completed:false,
+     routine:[{type:'Warm-up',desc:'Easy jog',duration:'12min'},{type:'Intervals',desc:'6 x 200m at Z4 - 90sec walk recovery',duration:'15min'},{type:'Cool-down',desc:'Easy walk + ankle stretch',duration:'8min'}]},
+    {d:'Thu',t:'gym',title:'Strength - Full Body',det:'Light weights - 45min',note:'',completed:false,
+     routine:[{exercise:'Squat',sets:'3',reps:'10',load:'Bodyweight'},{exercise:'Dumbbell Row',sets:'3',reps:'10',load:'Light'},{exercise:'Step-up',sets:'3',reps:'8 each',load:'Bodyweight'},{exercise:'Ankle Mobility',sets:'2',reps:'15 circles',load:''},{exercise:'Plank',sets:'3',reps:'30 sec',load:''}]},
+    {d:'Fri',t:'run',title:'Easy Run 4km',det:'Z2 - 25min',note:'',completed:false,
+     routine:[{type:'Main',desc:'Easy conversational jog Z2',duration:'25min'}]},
+    {d:'Sat',t:'rest',title:'Rest',det:'Complete rest',note:'',completed:false,routine:[]},
+    {d:'Sun',t:'run',title:'Long Run 8km',det:'Z2 - 50min',note:'',completed:false,
+     routine:[{type:'Easy',desc:'Full easy Z2 - no pace pressure',duration:'50min'}]}
+   ]},
+  {id:3,name:'Sofia Torres',ini:'ST',email:'sofia@email.com',goal:'Sub-2h Half Marathon',level:'Advanced',tier:'premium',km:60,sessions:6,mood:4.7,sleep:8.1,streak:21,injuries:'None',target:'Half Marathon Sep 2026',diet:'Vegetarian',
+   plan:[
+    {d:'Mon',t:'run',title:'Easy Run 10km',det:'Z2 - 55min',note:'',completed:false,
+     routine:[{type:'Warm-up',desc:'Easy jog',duration:'10min'},{type:'Main',desc:'Z2 steady - easy conversation pace',duration:'45min'},{type:'Cool-down',desc:'Walk + stretch',duration:'5min'}]},
+    {d:'Tue',t:'gym',title:'Strength - Power',det:'Olympic lifts - 60min',note:'Heavy this week',completed:false,
+     routine:[{exercise:'Power Clean',sets:'4',reps:'5',load:'Moderate-heavy'},{exercise:'Front Squat',sets:'4',reps:'6',load:'Heavy'},{exercise:'Romanian Deadlift',sets:'3',reps:'8',load:'Heavy'},{exercise:'Box Jump',sets:'3',reps:'8',load:'Bodyweight'},{exercise:'Core Circuit',sets:'3',reps:'45 sec each',load:''}]},
+    {d:'Wed',t:'run',title:'Tempo 10km',det:'Z4 - 50min - Race pace',note:'',completed:false,
+     routine:[{type:'Warm-up',desc:'Easy jog + drills',duration:'12min'},{type:'Tempo',desc:'Z4 - half marathon race pace - strong controlled effort',duration:'35min'},{type:'Cool-down',desc:'Easy jog + stretch',duration:'8min'}]},
+    {d:'Thu',t:'run',title:'Recovery Run 6km',det:'Z1 - 35min - Very easy',note:'',completed:false,
+     routine:[{type:'Recovery',desc:'Z1 - very easy - active recovery only',duration:'35min'}]},
+    {d:'Fri',t:'run',title:'Intervals 10x400m',det:'Z5 - 60sec recovery',note:'',completed:false,
+     routine:[{type:'Warm-up',desc:'Easy jog + accelerations',duration:'15min'},{type:'Intervals',desc:'10 x 400m at Z5 - 60sec rest - fast but controlled',duration:'30min'},{type:'Cool-down',desc:'Easy jog + full stretch',duration:'10min'}]},
+    {d:'Sat',t:'gym',title:'Core + Mobility',det:'60min',note:'',completed:false,
+     routine:[{exercise:'Hanging Knee Raise',sets:'3',reps:'15',load:''},{exercise:'Cable Woodchop',sets:'3',reps:'12 each',load:'Light-moderate'},{exercise:'Hip Flexor Stretch',sets:'2',reps:'60 sec each',load:''},{exercise:'IT Band Roll',sets:'2',reps:'2 min each',load:''},{exercise:'Yoga Flow',sets:'1',reps:'15 min',load:''}]},
+    {d:'Sun',t:'run',title:'Long Run 22km',det:'Z2 - 130min',note:'Race simulation last 5km',completed:false,
+     routine:[{type:'Easy',desc:'First 17km Z2 easy conversational',duration:'100min'},{type:'Race sim',desc:'Last 5km at goal race pace - half marathon pace',duration:'25min'},{type:'Recovery',desc:'Walk + stretch + hydrate well',duration:'10min'}]}
+   ]}
+];
+
+var PLANS = {digital:{pm:49,pa:470}, standard:{pm:89,pa:860}, premium:{pm:149,pa:1430}};
+
+var SPECIALIZATIONS = [
+  'Running Coach','Performance Coach','Mindset Coach','Strength Coach',
+  'Nutritionist','Mobility Coach','Recovery Specialist','Trail Running Coach',
+  'Sprint Coach','Triathlon Coach','CrossFit Coach','Yoga Instructor','Other'
+];
+
+var COACHES = [
+  {
+    id:1, name:'[Admin Name]', ini:'AD', email:'admin@finisherflow.com',
+    roles:['admin','performance_coach','running_coach'],
+    specializations:['Performance Coach','Running Coach','Mindset Coach'],
+    bio:'Sports and mindset coach with 10+ years experience. Ontological coaching specialist. 4x marathon finisher.',
+    certifications:'Ontological Coaching, PNL, RRCA Running Coach',
+    languages:['Spanish','English'],
+    clients:3, active:true
+  },
+  {
+    id:2, name:'[Coach Name]', ini:'CO', email:'coach@finisherflow.com',
+    roles:['coach'],
+    specializations:['Running Coach','Strength Coach'],
+    bio:'Running and strength coach. Specialist in marathon preparation and injury prevention.',
+    certifications:'NSCA-CPT, Running Coach Level 2',
+    languages:['Spanish'],
+    clients:3, active:true
+  }
+];
+
+
+// ── EXERCISE LIBRARY ──────────────────────────────────────────────────────
+// YouTube video IDs for technique demos (short/shorts preferred)
+var EXERCISE_LIB = {
+  legs: [
+    {name:'Squat',vid:'jyopTyOjXb0',tip:'Feet shoulder-width, knees track toes, chest up'},
+    {name:'Romanian Deadlift (RDL)',vid:'feJT8sDPfAA',tip:'Hinge at hips, soft knees, bar close to legs'},
+    {name:'Reverse Lunge',vid:'Oh5ziYGlgoI',tip:'Back knee hovers 2cm off floor, torso upright'},
+    {name:'Bulgarian Split Squat',vid:'nN846CMEShI',tip:'Rear foot elevated, front shin vertical'},
+    {name:'Leg Press',vid:'jyopTyOjXb0',tip:'Full range, do not lock knees at top'},
+    {name:'Leg Curl',vid:'jyopTyOjXb0',tip:'Control the eccentric, full range'},
+    {name:'Calf Raise',vid:'jyopTyOjXb0',tip:'Full range, pause at top and bottom'},
+    {name:'Glute Bridge',vid:'jyopTyOjXb0',tip:'Squeeze glutes at top, neutral spine'},
+    {name:'Hip Thrust',vid:'jyopTyOjXb0',tip:'Bar on hip crease, chin tucked'},
+    {name:'Step-up',vid:'Oh5ziYGlgoI',tip:'Drive through heel of working leg'},
+    {name:'Box Jump',vid:'jyopTyOjXb0',tip:'Land softly, full hip extension at top'},
+    {name:'Jump Squat',vid:'nN846CMEShI',tip:'Land quietly, absorb force through hips'}
+  ],
+  upper: [
+    {name:'Push-up',vid:'Oh5ziYGlgoI',tip:'Body straight line, elbows 45 degrees'},
+    {name:'Dumbbell Row',vid:'Oh5ziYGlgoI',tip:'Flat back, elbow drives back not out'},
+    {name:'Shoulder Press',vid:'Oh5ziYGlgoI',tip:'Core tight, do not arch lower back'},
+    {name:'Pull-up',vid:'Oh5ziYGlgoI',tip:'Dead hang start, chin over bar'},
+    {name:'Lat Pulldown',vid:'Oh5ziYGlgoI',tip:'Lean back slightly, elbows drive down'},
+    {name:'Bench Press',vid:'Oh5ziYGlgoI',tip:'Feet flat, bar to lower chest'},
+    {name:'Incline DB Press',vid:'Oh5ziYGlgoI',tip:'30-45 degree angle, control descent'},
+    {name:'Face Pull',vid:'Oh5ziYGlgoI',tip:'Pull to forehead, elbows high'},
+    {name:'Lateral Raise',vid:'Oh5ziYGlgoI',tip:'Slight forward lean, lead with elbows'}
+  ],
+  core: [
+    {name:'Plank',vid:'Oh5ziYGlgoI',tip:'Neutral spine, squeeze glutes and core'},
+    {name:'Dead Bug',vid:'Oh5ziYGlgoI',tip:'Lower back pressed to floor at all times'},
+    {name:'Bird Dog',vid:'Oh5ziYGlgoI',tip:'No rotation in hips, slow and controlled'},
+    {name:'Russian Twist',vid:'Oh5ziYGlgoI',tip:'Feet off floor for harder version'},
+    {name:'Hanging Knee Raise',vid:'Oh5ziYGlgoI',tip:'Control swing, squeeze abs at top'},
+    {name:'Cable Woodchop',vid:'Oh5ziYGlgoI',tip:'Rotate from hips not shoulders'},
+    {name:'Ab Wheel Rollout',vid:'Oh5ziYGlgoI',tip:'Brace core, do not let hips drop'}
+  ],
+  mobility: [
+    {name:'Hip Flexor Stretch',vid:'Oh5ziYGlgoI',tip:'Posterior pelvic tilt to deepen stretch'},
+    {name:'IT Band Roll',vid:'Oh5ziYGlgoI',tip:'Slow rolls, pause on tight spots'},
+    {name:'Foam Roll Quads',vid:'Oh5ziYGlgoI',tip:'Slow rolls from hip to knee'},
+    {name:'Ankle Mobility',vid:'Oh5ziYGlgoI',tip:'Knee tracks over little toe'},
+    {name:'Pigeon Pose',vid:'Oh5ziYGlgoI',tip:'Square hips to mat'},
+    {name:'World Greatest Stretch',vid:'Oh5ziYGlgoI',tip:'3-4 breaths per position'}
+  ]
+};
+
+// Running drills library
+var RUNNING_DRILLS = [
+  {name:'A-Skip',vid:'O9wh-huxbxU',tip:'Drive knee to hip height, stay on ball of foot'},
+  {name:'B-Skip',vid:'O9wh-huxbxU',tip:'A-skip + extend leg forward at top'},
+  {name:'High Knees',vid:'E7XSszU7Ddc',tip:'Drive knees to hip height, fast turnover'},
+  {name:'Butt Kicks',vid:'kRR1i9btd_w',tip:'Heel to glutes, upper leg stays vertical'},
+  {name:'Carioca',vid:'E7XSszU7Ddc',tip:'Cross front then behind, stay light on feet'},
+  {name:'Bounding',vid:'y6hBI3DEe6Y',tip:'Exaggerated stride, drive off back foot'},
+  {name:'Strides',vid:'y6hBI3DEe6Y',tip:'Build to 85% effort over 80m, smooth acceleration'},
+  {name:'Dynamic Warm-up',vid:'5CChuohB8DY',tip:'A-skip, B-skip, high knees, butt kicks sequence'},
+  {name:'Ankle Circles',vid:'Oh5ziYGlgoI',tip:'Full range, 10 each direction'},
+  {name:'Leg Swings',vid:'5CChuohB8DY',tip:'Hip height, hold wall for balance'},
+  {name:'Walking Lunges',vid:'Oh5ziYGlgoI',tip:'Maintain upright torso, control descent'}
+];
+
+
+var COURSES_DATA = [
+  {id:1,emoji:'🏃',cat:'Running',title:'Run Your First Marathon',desc:'Complete 12-week program for first-time marathoners. From base building to race day.',price:89,
+   lessons:[
+    {id:1,title:'Why Run a Marathon?',free:true,type:'video',
+     content:'Welcome to the program! In this lesson we explore the mindset behind committing to a marathon. The marathon is not just a race — it is a system for building mental strength, physical resilience, and personal identity.',
+     video_url:'https://www.youtube.com/embed/dQw4w9WgXcQ',duration:'8 min',
+     resources:[]},
+    {id:2,title:'How to Build Your Aerobic Base',free:false,type:'video',
+     content:'Before speed comes foundation. Learn how to build aerobic base using heart rate zones.',
+     video_url:'',duration:'12 min',resources:['base-building-guide.pdf']},
+    {id:3,title:'The Long Run Strategy',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:[]},
+    {id:4,title:'Nutrition for Long Distances',free:false,type:'video',content:'',video_url:'',duration:'15 min',resources:['nutrition-guide.pdf']},
+    {id:5,title:'Recovery — The Secret Weapon',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:[]},
+    {id:6,title:'Tapering Before Race Day',free:false,type:'video',content:'',video_url:'',duration:'12 min',resources:[]}
+   ]},
+  {id:2,emoji:'🧠',cat:'Mindset',title:'The Finisher Mindset',desc:'Mental training for endurance athletes. Build discipline, resilience, and focus.',price:49,
+   lessons:[
+    {id:1,title:'What is the Finisher Mindset?',free:true,type:'video',
+     content:'The Finisher Mindset is not about talent — it is about the decision to keep going when everything says stop. Three pillars: discipline, method, and action.',
+     video_url:'',duration:'10 min',resources:[]},
+    {id:2,title:'Managing Pain and Discomfort',free:false,type:'video',content:'',video_url:'',duration:'12 min',resources:[]},
+    {id:3,title:'Visualization for Athletes',free:false,type:'video',content:'',video_url:'',duration:'8 min',resources:[]},
+    {id:4,title:'Building Mental Resilience',free:false,type:'video',content:'',video_url:'',duration:'15 min',resources:[]}
+   ]},
+  {id:3,emoji:'🥗',cat:'Nutrition',title:'Eat to Run',desc:'Nutrition strategy for runners from daily fuel to race day.',price:59,
+   lessons:[
+    {id:1,title:'Carbs Are Not the Enemy',free:true,type:'video',
+     content:'Endurance athletes need carbohydrates. We debunk the myths and explain exactly how to use carbs as fuel.',
+     video_url:'',duration:'12 min',resources:[]},
+    {id:2,title:'Pre and Post Training Nutrition',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:['meal-plan-template.pdf']},
+    {id:3,title:'Race Day Fueling',free:false,type:'video',content:'',video_url:'',duration:'15 min',resources:[]},
+    {id:4,title:'Supplements That Work',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:[]}
+   ]},
+  {id:4,emoji:'⚡',cat:'Running',title:'Speed and Intervals',desc:'Boost your race pace with structured interval training.',price:69,
+   lessons:[
+    {id:1,title:'Understanding Training Zones',free:true,type:'video',
+     content:'Z1 to Z5 — what they mean, how to find yours, and why most recreational runners spend too much time in zone 3.',
+     video_url:'',duration:'10 min',resources:[]},
+    {id:2,title:'Your First Interval Session',free:false,type:'video',content:'',video_url:'',duration:'12 min',resources:[]},
+    {id:3,title:'Tempo Runs Explained',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:[]},
+    {id:4,title:'Building Your Speed Block',free:false,type:'video',content:'',video_url:'',duration:'15 min',resources:[]}
+   ]},
+  {id:5,emoji:'🌄',cat:'Running',title:'Trail Running Basics',desc:'From road to trail — technique, gear and training.',price:59,
+   lessons:[
+    {id:1,title:'Road vs Trail — What Changes',free:true,type:'video',
+     content:'Trail running is a completely different sport. Different footstrike, different pacing, different mindset.',
+     video_url:'',duration:'10 min',resources:[]},
+    {id:2,title:'Choosing Your First Trail Shoes',free:false,type:'video',content:'',video_url:'',duration:'8 min',resources:[]},
+    {id:3,title:'Uphill and Downhill Technique',free:false,type:'video',content:'',video_url:'',duration:'12 min',resources:[]},
+    {id:4,title:'Your First Trail Race',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:[]}
+   ]},
+  {id:6,emoji:'✨',cat:'Mindset',title:'Flow State Training',desc:'Access peak performance when it matters most.',price:39,
+   lessons:[
+    {id:1,title:'What is Flow State?',free:true,type:'video',
+     content:'Flow is the state where effort feels effortless and time disappears. The neuroscience and the 8 conditions that make it possible.',
+     video_url:'',duration:'8 min',resources:[]},
+    {id:2,title:'Pre-Training Rituals for Flow',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:[]},
+    {id:3,title:'Eliminating Performance Anxiety',free:false,type:'video',content:'',video_url:'',duration:'12 min',resources:[]},
+    {id:4,title:'Flow on Race Day',free:false,type:'video',content:'',video_url:'',duration:'10 min',resources:[]}
+   ]}
+];
+
+// Keep COURSES alias for backwards compatibility
+var COURSES = COURSES_DATA;
+
+
+var PHRASES_EN = [
+  '"The pain you feel today is the strength you feel tomorrow."',
+  '"Discipline is choosing what you want most over what you want now."',
+  '"Your legs are not giving out. Your head is giving up. Keep running."',
+  '"The finish line is just the beginning of a whole new race."'
+];
+var PHRASES_ES = [
+  '"El dolor que sientes hoy es la fuerza que sentiras manana."',
+  '"La disciplina es elegir lo que mas quieres sobre lo que quieres ahora."',
+  '"No son tus piernas las que se rinden. Es tu cabeza. Sigue corriendo."',
+  '"La meta es solo el comienzo de una nueva carrera."'
+];
+
+// NAV is determined by role + permissions at runtime
+function getNavItems() {
+  var role = PROFILE ? PROFILE.role : 'client';
+  var perms = PROFILE ? (PROFILE.permissions || [role]) : ['client'];
+  var isAdmin = perms.indexOf('admin') >= 0;
+  var isCoach = perms.indexOf('coach') >= 0 || role === 'coach';
+
+  var base = [];
+  if(role === 'client') {
+    base = [{id:'home',i:'🏠'},{id:'training',i:'🏃'},{id:'checkins',i:'🎙'},{id:'mindset',i:'🧘'},{id:'nutrition',i:'🥗'},{id:'sleep',i:'😴'},{id:'progress',i:'📊'},{id:'courses',i:'📚'},{id:'profile',i:'👤'},{id:'settings',i:'⚙️'}];
+  } else if(isAdmin && isCoach) {
+    // Both roles - show all items
+    base = [{id:'home',i:'🏠'},{id:'clients',i:'👥'},{id:'intake',i:'📋'},{id:'access',i:'🔐'},{id:'courses',i:'📚'},{id:'admin',i:'⚙️'},{id:'profile',i:'👤'},{id:'settings',i:'🔧'}];
+  } else if(isAdmin) {
+    base = [{id:'home',i:'🏠'},{id:'clients',i:'👥'},{id:'intake',i:'📋'},{id:'access',i:'🔐'},{id:'courses',i:'📚'},{id:'admin',i:'⚙️'},{id:'settings',i:'🔧'}];
+  } else {
+    // Coach only
+    base = [{id:'home',i:'🏠'},{id:'clients',i:'👥'},{id:'intake',i:'📋'},{id:'courses',i:'📚'},{id:'profile',i:'👤'},{id:'settings',i:'🔧'}];
+  }
+  return base;
+}
+
+var NAV = {
+  admin:[{id:'home',i:'🏠'},{id:'clients',i:'👥'},{id:'intake',i:'📋'},{id:'access',i:'🔐'},{id:'courses',i:'📚'},{id:'admin',i:'⚙️'},{id:'settings',i:'👤'}],
+  coach:[{id:'home',i:'🏠'},{id:'clients',i:'👥'},{id:'intake',i:'📋'},{id:'courses',i:'📚'},{id:'settings',i:'👤'}],
+  client:[{id:'home',i:'🏠'},{id:'training',i:'🏃'},{id:'checkins',i:'🎙'},{id:'mindset',i:'🧘'},{id:'nutrition',i:'🥗'},{id:'sleep',i:'😴'},{id:'progress',i:'📊'},{id:'courses',i:'📚'},{id:'profile',i:'👤'}]
+};
+
+// ── UTILITIES ──────────────────────────────────────────────────────────────
+function toast(m) {
+  var el = document.getElementById('toast');
+  el.textContent = m; el.className = 'toast show';
+  setTimeout(function(){ el.className = 'toast'; }, 2500);
+}
+function ini(n) { return (n||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2); }
+function greeting() { var h=new Date().getHours(); return h<12?t('goodmorning'):h<17?t('goodafternoon'):t('goodevening'); }
+function tclass(tier) { return {premium:'tp-p',standard:'tp-s',digital:'tp-d'}[tier]||'tp-d'; }
+function tlabel(tier) { return {premium:t('plan_p'),standard:t('plan_s'),digital:t('plan_d')}[tier]||tier; }
+function locale() { return LANG==='es'?'es-AR':'en-US'; }
+function phrase() { var p=LANG==='es'?PHRASES_ES:PHRASES_EN; return p[new Date().getDay()%p.length]; }
+
+// ── LANGUAGE ───────────────────────────────────────────────────────────────
+function setLang(lang) {
+  LANG = lang;
+  // Update ALL lang buttons
+  ['en','es'].forEach(function(l){
+    var a = document.getElementById('auth-lang-'+l);
+    var b = document.getElementById('app-lang-'+l);
+    if(a) a.className = 'lbtn ' + (l===lang?'on':'off');
+    if(b) b.className = 'alb ' + (l===lang?'on':'off');
+  });
+  // Auth screen text IDs
+  var textMap = {
+    'lang-tagline':'tagline',
+    'lang-signtitle':'signin',
+    'lang-emaillbl':'email',
+    'lang-passlbl':'password',
+    'lang-signinbtn':'signinbtn',
+    'lang-regtitle':'register',
+    'lang-trialline':'trialfree',
+    'lang-namelbl':'fullname',
+    'lang-iamlbl':'iama',
+    'lang-optathlete':'athlete',
+    'lang-optcoach':'coachopt',
+    'lang-termstext':'trialfree',
+    'lang-regbtn':'regbtn',
+    'lang-demodiv':'ortrydemo',
+    'lang-disc-enter':'discEnter',
+    'lang-disc-accept':'discAccept',
+    'lang-disc-title':'discTitle'
+  };
+  Object.keys(textMap).forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.textContent = t(textMap[id]);
+  });
+  // HTML content with links
+  var newhere = document.getElementById('lang-newhere');
+  if(newhere) newhere.innerHTML = t('newhere') + ' <span onclick="showReg()">' + t('startfree') + '</span>';
+  var havacct = document.getElementById('lang-havacct');
+  if(havacct) havacct.innerHTML = t('alreadyhave') + ' <span onclick="showLogin()">' + t('signinlink') + '</span>';
+  // Logout button
+  var lo = document.getElementById('lang-logout');
+  if(lo) lo.textContent = t('signout');
+  // Rebuild nav if logged in
+  if(PROFILE) buildNav(PROFILE.role);
+  // Re-render current page
+  if(PAGE && PROFILE) renderPage(PAGE);
+  toast(lang==='es'?'Idioma: Espanol':'Language: English');
+}
+
+// ── SCREENS ────────────────────────────────────────────────────────────────
+function showAuth() {
+  document.getElementById('screen').innerHTML = buildAuth();
+}
+
+function buildAuth() {
+  return '<div class="auth-wrap"><div class="auth-box">' +
+    '<div class="auth-logo">FinisherFlow</div>' +
+    '<div class="auth-tag" id="lang-tagline">' + t('tagline') + '</div>' +
+    '<div class="lang-bar"><div class="lang-wrap">' +
+    '<button class="lbtn on" id="auth-lang-en" onclick="setLang(\'en\')">EN</button>' +
+    '<button class="lbtn off" id="auth-lang-es" onclick="setLang(\'es\')">ES</button>' +
+    '</div></div>' +
+    '<div class="err-box" id="auth-err"></div>' +
+    '<div id="form-login">' +
+    '<div class="auth-title" id="lang-signtitle">' + t('signin') + '</div>' +
+    '<div class="fld"><label id="lang-emaillbl">' + t('email') + '</label><input type="email" id="l-email" placeholder="you@email.com" autocomplete="email"></div>' +
+    '<div class="fld"><label id="lang-passlbl">' + t('password') + '</label><input type="password" id="l-pass" placeholder="••••••••" autocomplete="current-password"></div>' +
+    '<button class="btn-gold" id="lang-signinbtn" onclick="doLogin()">' + t('signinbtn') + '</button>' +
+    '<div class="auth-sw" id="lang-newhere">' + t('newhere') + ' <span onclick="showReg()">' + t('startfree') + '</span></div>' +
+    '<div class="auth-div" id="lang-demodiv">' + t('ortrydemo') + '</div>' +
+    '<div class="demo-grid">' +
+    '<button class="dbtn admin" onclick="demoLogin(\'admin\')">👑 Admin</button>' +
+    '<button class="dbtn other" onclick="demoLogin(\'coach\')">🏋 Coach</button>' +
+    '</div>' +
+    '<button style="width:100%;margin-top:.4rem;padding:.65rem;border-radius:8px;border:2px solid var(--gold);background:rgba(201,168,76,.08);color:var(--gold);font-family:-apple-system,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer" onclick="demoLogin(\'admin_coach\')">🏆 Admin + Coach Demo</button>' +
+    '</div>' +
+    '<div id="form-reg" style="display:none">' +
+    '<div class="auth-title" id="lang-regtitle">' + t('register') + '</div>' +
+    '<div class="trial-box">🎉 <span id="lang-trialline">' + t('trialfree') + '</span></div>' +
+    '<div class="fld"><label id="lang-namelbl">' + t('fullname') + '</label><input type="text" id="r-name" autocomplete="name"></div>' +
+    '<div class="fld"><label>' + t('email') + '</label><input type="email" id="r-email" autocomplete="email"></div>' +
+    '<div class="fld"><label id="lang-passlbl2">' + t('password') + '</label><input type="password" id="r-pass" autocomplete="new-password"></div>' +
+    '<div class="fld"><label id="lang-iamlbl">' + t('iama') + '</label><select id="r-role"><option value="client" id="lang-optathlete">' + t('athlete') + '</option><option value="coach" id="lang-optcoach">' + t('coachopt') + '</option></select></div>' +
+    '<button class="btn-gold" id="lang-regbtn" onclick="doRegister()">' + t('regbtn') + '</button>' +
+    '<div class="auth-sw" id="lang-havacct">' + t('alreadyhave') + ' <span onclick="showLogin()">' + t('signinlink') + '</span></div>' +
+    '</div></div></div>';
+}
+
+function showDisc() {
+  document.getElementById('screen').innerHTML =
+    '<div class="disc-wrap"><div class="disc-box">' +
+    '<div style="font-size:2rem;text-align:center;margin-bottom:.5rem">❤️</div>' +
+    '<h2 id="lang-disc-title">' + t('discTitle') + '</h2>' +
+    '<p style="text-align:center;color:var(--tx2);margin-bottom:1rem">Please read carefully before starting.</p>' +
+    '<h3>Medical clearance</h3>' +
+    '<p>All training plans do not replace professional medical advice. Consult your doctor before starting.</p>' +
+    '<h3>Annual checks recommended</h3>' +
+    '<ul><li>Cardiac stress test (ECG)</li><li>Full blood panel: iron, ferritin, vitamin D, B12</li><li>Blood pressure and resting heart rate</li></ul>' +
+    '<h3>Stop immediately if you experience:</h3>' +
+    '<ul><li>Chest pain or tightness</li><li>Dizziness or fainting</li><li>Unusual shortness of breath</li><li>Heart palpitations during exercise</li></ul>' +
+    '<div class="disc-accept" id="disc-accept-box" onclick="toggleDisc()">' +
+    '<input type="checkbox" id="disc-chk">' +
+    '<span id="lang-disc-accept">' + t('discAccept') + '</span>' +
+    '</div>' +
+    '<button class="btn-gold" id="disc-enter" onclick="enterApp()" style="margin-top:.85rem;opacity:.4;pointer-events:none" id="lang-disc-enter">' + t('discEnter') + '</button>' +
+    '</div></div>';
+}
+
+function toggleDisc() {
+  var chk = document.getElementById('disc-chk');
+  chk.checked = !chk.checked;
+  DISC_CHECKED = chk.checked;
+  document.getElementById('disc-accept-box').className = 'disc-accept' + (chk.checked?' checked':'');
+  var btn = document.getElementById('disc-enter');
+  btn.style.opacity = chk.checked ? '1' : '.4';
+  btn.style.pointerEvents = chk.checked ? 'auto' : 'none';
+}
+
+function showApp() {
+  var role = PROFILE.role;
+  var navHtml = '';
+  (NAV[role]||NAV.client).forEach(function(it){
+    navHtml += '<div class="nav-item" id="ni-'+it.id+'" onclick="goTo(\''+it.id+'\')">'+it.i+' '+t(it.id)+'</div>';
+  });
+
+  document.getElementById('screen').innerHTML =
+    '<div class="app-layout">' +
+    '<aside class="sidebar" id="sidebar">' +
+    '<div class="sb-logo"><h1>FinisherFlow</h1><p>Train · Think · Perform</p></div>' +
+    '<div class="sb-user"><div class="sb-av">'+getInitials()+'</div>' +
+    '<div class="sb-info"><p>'+getDisplayName()+'</p>' +
+    '<span>'+getRoleLabel()+'</span></div></div>' +
+    getRoleSwitcher() +
+    '<nav class="sb-nav" id="sb-nav">'+navHtml+'</nav>' +
+    '<div class="sb-bottom">' +
+    '<div class="app-lang">' +
+    '<button class="alb on" id="app-lang-en" onclick="setLang(\'en\')">EN</button>' +
+    '<button class="alb off" id="app-lang-es" onclick="setLang(\'es\')">ES</button>' +
+    '</div>' +
+    '<button class="logout-btn" id="lang-logout" onclick="doLogout()">'+t('signout')+'</button>' +
+    '</div></aside>' +
+    '<main class="main-content" id="main-content">' +
+    '<div id="page-home" class="page"></div>' +
+    '<div id="page-training" class="page"></div>' +
+    '<div id="page-checkins" class="page"></div>' +
+    '<div id="page-mindset" class="page"></div>' +
+    '<div id="page-nutrition" class="page"></div>' +
+    '<div id="page-sleep" class="page"></div>' +
+    '<div id="page-progress" class="page"></div>' +
+    '<div id="page-courses" class="page"></div>' +
+    '<div id="page-clients" class="page"></div>' +
+    '<div id="page-client-detail" class="page"></div>' +
+    '<div id="page-intake" class="page"></div>' +
+    '<div id="page-access" class="page"></div>' +
+    '<div id="page-admin" class="page"></div>' +
+    '<div id="page-profile" class="page"></div>' +
+    '<div id="page-settings" class="page"></div>' +
+    '</main></div>';
+
+  document.getElementById('hamburger').style.display = 'flex';
+  goTo('home');
+}
+
+// ── AUTH ───────────────────────────────────────────────────────────────────
+function showErr(m) {
+  var e = document.getElementById('auth-err');
+  if(!e) return;
+  e.textContent = m; e.className = 'err-box show';
+  setTimeout(function(){ e.className = 'err-box'; }, 4000);
+}
+
+function showLogin() {
+  var fl = document.getElementById('form-login');
+  var fr = document.getElementById('form-reg');
+  if(fl) fl.style.display = '';
+  if(fr) fr.style.display = 'none';
+}
+
+function showReg() {
+  var fl = document.getElementById('form-login');
+  var fr = document.getElementById('form-reg');
+  if(fl) fl.style.display = 'none';
+  if(fr) fr.style.display = '';
+}
+
+async function doLogin() {
+  var email = document.getElementById('l-email').value.trim();
+  var pass = document.getElementById('l-pass').value;
+  if(!email||!pass){ showErr('Please fill in all fields'); return; }
+  var btn = document.getElementById('lang-signinbtn');
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    var res = await SB.auth.signInWithPassword({email:email, password:pass});
+    if(res.error) { showErr(res.error.message); }
+  } catch(e) { showErr('Login failed. Please try again.'); }
+  btn.disabled = false; btn.textContent = t('signinbtn');
+}
+
+async function doRegister() {
+  var name = document.getElementById('r-name').value.trim();
+  var email = document.getElementById('r-email').value.trim();
+  var pass = document.getElementById('r-pass').value;
+  var role = document.getElementById('r-role').value;
+  if(!name||!email||!pass){ showErr('Please fill in all fields'); return; }
+  var btn = document.getElementById('lang-regbtn');
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    var res = await SB.auth.signUp({email:email, password:pass, options:{data:{full_name:name, role:role}}});
+    if(res.error) { showErr(res.error.message); }
+    else {
+      toast('Welcome to FinisherFlow!');
+      await SB.auth.signInWithPassword({email:email, password:pass});
+    }
+  } catch(e) { showErr('Registration failed. Please try again.'); }
+  btn.disabled = false; btn.textContent = t('regbtn');
+}
+
+
+// ── PROFILE HELPERS ────────────────────────────────────────────────────────
+function getDisplayName() {
+  if(!PROFILE) return 'User';
+  return PROFILE.full_name || PROFILE.name || PROFILE.email || 'User';
+}
+
+function getInitials() {
+  var name = getDisplayName();
+  return name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2) || 'FF';
+}
+
+function getRoleLabel() {
+  if(!PROFILE) return '';
+  var perms = PROFILE.permissions || [PROFILE.role];
+  var isAdmin = perms.indexOf('admin') >= 0;
+  var isCoach = perms.indexOf('coach') >= 0;
+  var specs = PROFILE.specializations || [];
+  if(isAdmin && isCoach) return (LANG==='es'?'Admin + ':'' + '') + (specs[0] || 'Coach');
+  if(isAdmin) return LANG==='es'?'Administrador/a':'Administrator';
+  if(specs[0]) return specs[0];
+  return LANG==='es'?'Coach':'Coach';
+}
+
+function getRoleSwitcher() {
+  if(!PROFILE) return '';
+  var perms = PROFILE.permissions || [PROFILE.role];
+  var isAdmin = perms.indexOf('admin') >= 0;
+  var isCoach = perms.indexOf('coach') >= 0;
+  if(!isAdmin || !isCoach) return '';
+  // Has both roles - show switcher
+  var currentlyViewingAdmin = PROFILE.role === 'admin';
+  if(currentlyViewingAdmin) {
+    return '<div style="padding:.5rem 1rem;border-bottom:1px solid var(--bd)">' +
+      '<button onclick="switchToCoachView()" style="width:100%;padding:.4rem;border-radius:6px;border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.06);color:var(--gold);font-family:inherit;font-size:.72rem;font-weight:600;cursor:pointer">' +
+      '🏋 ' + (LANG==='es'?'Vista Coach':'Coach View') + '</button></div>';
+  } else {
+    return '<div style="padding:.5rem 1rem;border-bottom:1px solid var(--bd)">' +
+      '<button onclick="switchToAdminView()" style="width:100%;padding:.4rem;border-radius:6px;border:1px solid rgba(201,168,76,.3);background:rgba(201,168,76,.06);color:var(--gold);font-family:inherit;font-size:.72rem;font-weight:600;cursor:pointer">' +
+      '⚙️ ' + (LANG==='es'?'Vista Admin':'Admin View') + '</button></div>';
+  }
+}
+
+function switchToCoachView() {
+  // Keep all profile data but change navigation to coach view
+  var savedRole = PROFILE.role;
+  PROFILE._savedRole = savedRole;
+  PROFILE.role = 'coach';
+  showApp();
+  goTo('home');
+}
+
+function switchToAdminView() {
+  PROFILE.role = PROFILE._savedRole || 'admin';
+  showApp();
+  goTo('home');
+}
+
+function hasPermission(perm) {
+  if(!PROFILE) return false;
+  var perms = PROFILE.permissions || [PROFILE.role];
+  return perms.indexOf(perm) >= 0 || perms.indexOf('admin') >= 0;
+}
+
+function demoLogin(role) {
+  // Demo mode - uses generic placeholder names, no hardcoded real names
+  var demoProfiles = {
+    admin: {
+      id:'demo-admin', full_name:'Admin User', name:'Admin User', 
+      role:'admin', permissions:['admin'], 
+      specializations:[], bio:'Platform administrator.',
+      email:'admin@finisherflow.com', initials:'AU'
+    },
+    coach: {
+      id:'demo-coach', full_name:'Coach User', name:'Coach User',
+      role:'coach', permissions:['coach'],
+      specializations:['Running Coach','Strength Coach'],
+      bio:'Running and strength coach.',
+      email:'coach@finisherflow.com', initials:'CU'
+    },
+    admin_coach: {
+      id:'demo-admin2', full_name:'Admin + Coach Demo', name:'Admin + Coach Demo',
+      role:'admin', permissions:['admin','coach'],
+      specializations:['Performance Coach','Mindset Coach','Running Coach'],
+      bio:'Administrator and performance coach.',
+      email:'admin2@finisherflow.com', initials:'AC'
+    },
+    client: {
+      id:'demo-client', full_name:'Demo Client', name:'Demo Client',
+      role:'client', permissions:['client'],
+      specializations:[], bio:'',
+      email:'client@finisherflow.com', initials:'DC'
+    }
+  };
+  USER = {id:'demo-'+role};
+  PROFILE = demoProfiles[role] || demoProfiles.client;
+  document.getElementById('screen').innerHTML = '';
+  showApp();
+}
+
+function enterApp() {
+  if(!DISC_CHECKED){ toast('Please accept the health disclaimer first'); return; }
+  document.getElementById('screen').innerHTML = '';
+  showApp();
+}
+
+async function doLogout() {
+  try { if(SB) await SB.auth.signOut(); } catch(e){}
+  USER = null; PROFILE = null;
+  document.getElementById('hamburger').style.display = 'none';
+  closeSB();
+  showAuth();
+}
+
+async function loadProfile() {
+  try {
+    var res = await SB.from('profiles').select('*').eq('id', USER.id).single();
+    if(res.data) { PROFILE = res.data; return; }
+    var meta = USER.user_metadata || {};
+    var p = {id:USER.id, full_name:meta.full_name||USER.email, name:meta.full_name||USER.email, email:USER.email, role:meta.role||'client'};
+    await SB.from('profiles').upsert(p);
+    PROFILE = p;
+  } catch(e) {
+    var meta = USER.user_metadata || {};
+    PROFILE = {id:USER.id, full_name:meta.full_name||USER.email, name:meta.full_name||USER.email, email:USER.email, role:meta.role||'client'};
+  }
+}
+
+// ── NAVIGATION ─────────────────────────────────────────────────────────────
+function goTo(page) {
+  PAGE = page;
+  document.querySelectorAll('.nav-item').forEach(function(n){ n.classList.remove('active'); });
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  var ni = document.getElementById('ni-'+page);
+  if(ni) ni.classList.add('active');
+  var pg = document.getElementById('page-'+page);
+  if(pg) pg.classList.add('active');
+  renderPage(page);
+  if(window.innerWidth<=768) closeSB();
+}
+
+function buildNav(role) {
+  var nav = document.getElementById('sb-nav');
+  if(!nav) return;
+  nav.innerHTML = '';
+  (NAV[role]||NAV.client).forEach(function(it){
+    var d = document.createElement('div');
+    d.className = 'nav-item' + (PAGE===it.id?' active':'');
+    d.id = 'ni-'+it.id;
+    d.textContent = it.i + ' ' + t(it.id);
+    (function(id){ d.onclick = function(){ goTo(id); }; })(it.id);
+    nav.appendChild(d);
+  });
+}
+
+function toggleSB() {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('overlay');
+  if(!sb) return;
+  if(sb.classList.contains('open')) { sb.classList.remove('open'); ov.classList.remove('show'); }
+  else { sb.classList.add('open'); ov.classList.add('show'); }
+}
+function closeSB() {
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('overlay');
+  if(sb) sb.classList.remove('open');
+  if(ov) ov.classList.remove('show');
+}
+
+// ── PAGE RENDERS ───────────────────────────────────────────────────────────
+function renderPage(page) {
+  var role = PROFILE && PROFILE.role;
+  var map = {
+    home: function(){ role==='client'?rClientHome():role==='coach'?rCoachHome():rAdminHome(); },
+    training: rTraining, checkins: rCheckins, mindset: rMindset,
+    nutrition: rNutrition, sleep: rSleep, progress: rProgress, courses: rCourses,
+    clients: rClients, 'client-detail': function(){ rClientDetail(); },
+    intake: rIntake, access: rAccess, admin: rAdmin,
+    profile: rProfile, settings: rSettings
+  };
+  if(map[page]) map[page]();
+}
+
+function el(id) { return document.getElementById('page-'+id); }
+function h(id, html) { var e=el(id); if(e) e.innerHTML=html; }
+
+function rAdminHome() {
+  h('home', '<div class="ph"><h2>'+greeting()+', LORENA</h2><p>'+new Date().toLocaleDateString(locale(),{weekday:'long',month:'long',day:'numeric',year:'numeric'})+'</p></div>' +
+  '<div class="g4" style="gap:.65rem;margin-bottom:1.25rem">' +
+  '<div class="stat"><label>'+t('clients')+'</label><div class="v gold">'+CLIENTS.length+'</div></div>' +
+  '<div class="stat"><label>'+t('sessions')+'</label><div class="v grn">12</div><div class="s">'+t('thisweek')+'</div></div>' +
+  '<div class="stat"><label>'+t('mood')+'</label><div class="v">4.2</div></div>' +
+  '<div class="stat"><label>MRR</label><div class="v gold">$1,840</div></div>' +
+  '</div>' +
+  '<div class="g2" style="gap:1rem">' +
+  '<div class="card"><div style="font-weight:600;margin-bottom:.85rem">'+t('clients')+'</div>' +
+  CLIENTS.map(function(c){ return '<div class="client-row" onclick="openClient('+c.id+')"><div class="cav">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+c.goal+'</div></div><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span></div>'; }).join('') +
+  '</div>' +
+  '<div><div class="card"><div style="font-weight:600;margin-bottom:.85rem">'+(LANG==='es'?'Acciones Rapidas':'Quick Actions')+'</div>' +
+  '<button class="btn p" style="width:100%;margin-bottom:.5rem" onclick="goTo(\'intake\')">'+t('newclient')+'</button>' +
+  '<button class="btn s" style="width:100%;margin-bottom:.5rem" onclick="goTo(\'clients\')">'+t('clients')+'</button>' +
+  '<button class="btn s" style="width:100%" onclick="goTo(\'admin\')">'+t('admin')+'</button>' +
+  '</div></div></div>');
+}
+
+function rCoachHome() {
+  h('home', '<div class="ph"><h2>'+greeting()+', CHRISTIAN</h2><p>'+new Date().toLocaleDateString(locale(),{weekday:'long',month:'long',day:'numeric'})+'</p></div>' +
+  '<div class="g3" style="gap:.65rem;margin-bottom:1.25rem">' +
+  '<div class="stat"><label>'+t('clients')+'</label><div class="v gold">'+CLIENTS.length+'</div></div>' +
+  '<div class="stat"><label>'+t('sessions')+'</label><div class="v grn">8</div></div>' +
+  '<div class="stat"><label>'+(LANG==='es'?'Alertas':'Alerts')+'</label><div class="v" style="color:var(--red)">1</div></div>' +
+  '</div>' +
+  '<div class="card"><div style="font-weight:600;margin-bottom:.85rem">'+t('tapmanage')+'</div>' +
+  CLIENTS.map(function(c){ var al=c.mood<3.5||c.sleep<7; return '<div class="client-row" onclick="openClient('+c.id+')"><div class="cav" style="background:'+(al?'var(--red)':'var(--gold)')+'">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+c.goal+' - '+c.km+'km/wk</div></div><span>'+(c.mood>=4?'😄':c.mood>=3?'🙂':'😕')+'</span>'+( al?'<span style="background:var(--red);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:700;flex-shrink:0">!</span>':'')+'</div>'; }).join('') +
+  '</div>');
+}
+
+function rClientHome() {
+  var emj = ['😔','😕','😐','🙂','😄'];
+  var sicons = {morning:'🌅',midday:'☀️',afternoon:'🌆',night:'🌙'};
+  var slbls_en = {morning:'Morning',midday:'Midday',afternoon:'Afternoon',night:'Night'};
+  var slbls_es = {morning:'Manana',midday:'Mediodia',afternoon:'Tarde',night:'Noche'};
+  var slbls = LANG==='es'?slbls_es:slbls_en;
+  var slotsHtml = SLOTS.map(function(s){ return '<div style="flex:1;background:var(--sf2);border:1px solid '+(s.rec?'var(--grn)':s.recording?'var(--red)':'var(--bd)')+';border-radius:10px;padding:.65rem .3rem;text-align:center;cursor:pointer" onclick="toggleRec(\''+s.id+'\')" ><div style="font-size:1.3rem">'+sicons[s.id]+'</div><div style="font-size:.6rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px">'+slbls[s.id]+'</div><div style="font-size:.58rem;color:'+(s.rec?'var(--grn)':s.recording?'var(--red)':'var(--tx3)')+'">'+( s.recording?(LANG==='es'?'Grabando...':'Recording...'):s.rec?'✓':(LANG==='es'?'Toca':'Tap'))+'</div></div>'; }).join('');
+  var chkItems=[{i:'🏃',en:'Morning training',es:'Entrenamiento'},
+    {i:'🥗',en:'Nutrition plan',es:'Plan de nutricion'},
+    {i:'😴',en:"Last nights sleep",es:'Sueno de anoche'}];
+  var chkHtml = chkItems.map(function(item){ return '<div style="display:flex;align-items:flex-start;gap:9px;padding:.55rem 0;border-bottom:1px solid var(--bd)"><div style="width:20px;height:20px;border-radius:4px;border:2px solid var(--bd);flex-shrink:0;margin-top:2px;cursor:pointer" onclick="this.style.background=this.style.background?\'\':\' var(--gold)\';this.style.borderColor=this.style.background?\'\':\' var(--gold)\'"></div><div><div style="font-size:.85rem;font-weight:500">'+item.i+' '+(LANG==='es'?item.es:item.en)+'</div><div style="display:flex;gap:.3rem;margin-top:.25rem">'+emj.map(function(e){ return '<button style="background:transparent;border:1px solid var(--bd);border-radius:5px;padding:.2rem .3rem;font-size:.9rem;cursor:pointer" onclick="toast(\'ok\')">'+e+'</button>'; }).join('')+'</div></div></div>'; }).join('');
+  h('home',
+    '<div class="ph"><h2>'+greeting()+', '+((PROFILE.full_name||PROFILE.name||'').split(' ')[0]||'').toUpperCase()+'</h2><p>'+new Date().toLocaleDateString(locale(),{weekday:'long',month:'long',day:'numeric'})+'</p></div>' +
+    '<div class="phrase-card"><div style="font-size:.65rem;color:var(--gold);letter-spacing:2px;text-transform:uppercase;margin-bottom:.6rem">✦ '+t('todaysphrase')+'</div><div style="font-size:1rem;line-height:1.65;font-weight:300;font-style:italic">'+phrase()+'</div><div style="font-size:.75rem;color:var(--tx3);margin-top:.65rem">— FinisherFlow</div></div>' +
+    '<button onclick="openSkipModal()" style="width:100%;padding:.65rem;border-radius:10px;border:1px solid rgba(226,75,74,.3);background:rgba(226,75,74,.06);color:#f08080;font-size:.85rem;font-weight:600;cursor:pointer;margin-bottom:.85rem">🚫 '+t('cantrain')+'</button>' +
+    '<div class="g2" style="gap:1rem"><div>' +
+    '<div class="card" style="margin-bottom:1rem"><div style="font-weight:600;margin-bottom:.65rem">'+t('checklist')+'</div>'+chkHtml+'</div>' +
+    '<div class="g4" style="gap:.5rem"><div class="stat"><label>'+t('sessions')+'</label><div class="v gold">5</div><div class="s">'+t('thisweek')+'</div></div><div class="stat"><label>'+t('mood')+'</label><div class="v grn">4.2</div></div><div class="stat"><label>'+t('sleepl')+'</label><div class="v">7.8h</div></div><div class="stat"><label>'+t('streak')+'</label><div class="v gold">14</div><div class="s">'+t('days')+'</div></div></div>' +
+    '</div><div>' +
+    '<div class="card" style="margin-bottom:1rem"><div style="font-weight:600;margin-bottom:.5rem">'+t('howfeeling')+'</div><div style="display:flex;gap:.35rem">'+emj.map(function(e,i){ return '<button style="flex:1;padding:.55rem;border:2px solid var(--bd);border-radius:8px;background:transparent;font-size:1.2rem;cursor:pointer" onclick="toast(\'ok\')">'+e+'</button>'; }).join('')+'</div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.5rem">'+t('dailycheckins')+'</div><div style="font-size:.72rem;color:var(--tx3);margin-bottom:.55rem">'+(LANG==='es'?'Toca para grabar':'Tap to record')+'</div><div style="display:flex;gap:.4rem;margin-bottom:.65rem">'+slotsHtml+'</div><textarea style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.65rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical;min-height:55px;margin-bottom:.5rem" placeholder="'+(LANG==='es'?'Como te sentis...':'How are you feeling...')+'"></textarea><button class="btn p sm" onclick="toast(\'ok\')">'+t('savecheckin')+'</button></div>' +
+    '</div></div>');
+}
+
+function toggleRec(id) {
+  var s = SLOTS.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var samples_en=['Feeling good, ready for training.','A bit tired, legs feel heavy.','Energy is back.','Exhausted today.'];
+  var samples_es=['Me siento bien, lista.','Un poco cansada.','Recupere la energia.','Agotada hoy.'];
+  var idx = SLOTS.indexOf(s);
+  if(s.recording){ s.recording=false; s.rec=true; s.tr=(LANG==='es'?samples_es:samples_en)[idx]; toast('ok'); }
+  else if(!s.rec){ s.recording=true; toast(LANG==='es'?'Grabando...':'Recording...'); }
+  else { s.rec=false; s.tr=''; toast(LANG==='es'?'Borrado':'Cleared'); }
+  renderPage(PAGE);
+}
+
+// Skip/cant train modal
+var SKIP_REASONS_EN=['Too busy / work','Not feeling well','Sick','Injury / pain','Travel','Family emergency','Mental fatigue','Other'];
+var SKIP_REASONS_ES=['Muy ocupado/a','No me siento bien','Enfermo/a','Lesion / dolor','Viaje','Emergencia familiar','Fatiga mental','Otro'];
+var skipReason=''; var skipDays=2;
+
+function openSkipModal() {
+  var reasons = LANG==='es'?SKIP_REASONS_ES:SKIP_REASONS_EN;
+  var modal = document.createElement('div');
+  modal.id = 'skip-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:1.75rem;width:100%;max-width:420px">' +
+    '<div style="font-size:1.2rem;font-weight:700;margin-bottom:.25rem">'+t('whydialog')+'</div>' +
+    '<div style="font-size:.82rem;color:var(--tx2);margin-bottom:1.25rem">'+t('notifycoach')+'</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:1rem">' +
+    reasons.map(function(r,i){ return '<button id="sr-'+i+'" onclick="selectReason(\''+r+'\','+i+')" style="padding:.55rem .7rem;border-radius:8px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:.78rem;cursor:pointer;text-align:left">'+r+'</button>'; }).join('') +
+    '</div>' +
+    '<div style="font-size:.8rem;font-weight:600;margin-bottom:.6rem">'+t('estimatedays')+'</div>' +
+    '<div style="display:flex;gap:.4rem;margin-bottom:1.25rem">' +
+    [1,2,3,4,5,7].map(function(d){ return '<button id="sd-'+d+'" onclick="selectSkipDays('+d+')" style="flex:1;padding:.5rem;border-radius:8px;border:1px solid '+(d===2?'var(--gold)':'var(--bd)')+';background:'+(d===2?'rgba(201,168,76,.15)':'transparent')+';color:'+(d===2?'var(--gold)':'var(--tx2)')+';font-size:.82rem;font-weight:600;cursor:pointer">'+d+'</button>'; }).join('') +
+    '</div>' +
+    '<div style="display:flex;gap:.6rem">' +
+    '<button id="skip-confirm" onclick="confirmSkip()" style="flex:1;padding:.65rem;background:var(--gold);border:none;border-radius:8px;color:#0C0C0F;font-weight:600;cursor:pointer;opacity:.4;pointer-events:none">'+(LANG==='es'?'Notificar Coach':'Notify Coach')+'</button>' +
+    '<button onclick="closeSkipModal()" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--bd);border-radius:8px;color:var(--tx2);cursor:pointer">'+(LANG==='es'?'Cancelar':'Cancel')+'</button>' +
+    '</div></div>';
+  document.body.appendChild(modal);
+}
+
+function selectReason(r, idx) {
+  skipReason = r;
+  document.querySelectorAll('[id^="sr-"]').forEach(function(b){ b.style.borderColor='var(--bd)'; b.style.background='transparent'; b.style.color='var(--tx2)'; });
+  var btn = document.getElementById('sr-'+idx);
+  if(btn){ btn.style.borderColor='var(--gold)'; btn.style.background='rgba(201,168,76,.15)'; btn.style.color='var(--gold)'; }
+  var cb = document.getElementById('skip-confirm');
+  if(cb){ cb.style.opacity='1'; cb.style.pointerEvents='auto'; }
+}
+
+function selectSkipDays(d) {
+  skipDays = d;
+  document.querySelectorAll('[id^="sd-"]').forEach(function(b){ b.style.borderColor='var(--bd)'; b.style.background='transparent'; b.style.color='var(--tx2)'; });
+  var btn = document.getElementById('sd-'+d);
+  if(btn){ btn.style.borderColor='var(--gold)'; btn.style.background='rgba(201,168,76,.15)'; btn.style.color='var(--gold)'; }
+}
+
+function confirmSkip() {
+  closeSkipModal();
+  for(var i=0;i<Math.min(skipDays, CLIENTS.length && CLIENTS[0].plan.length);i++){
+    CLIENTS[0].plan[i] = {d:CLIENTS[0].plan[i].d,t:'rest',title:LANG==='es'?'Descanso':'Rest / Recovery',det:(LANG==='es'?'Descanso por: ':'Rest due to: ')+skipReason,note:LANG==='es'?'Plan ajustado':'Plan adjusted by coach'};
+  }
+  toast(t('skippedplan'));
+}
+
+function closeSkipModal() {
+  var m = document.getElementById('skip-modal');
+  if(m) m.remove();
+}
+
+function rTraining() {
+  var c = CLIENTS[0];
+  var today = new Date();
+  var mon = new Date(today);
+  mon.setDate(today.getDate() - today.getDay() + 1 + WK*7);
+  var days_en = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var days_es = ['Lun','Mar','Mie','Jue','Vie','Sab','Dom'];
+  var days = LANG==='es' ? days_es : days_en;
+  var days_full_en = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var days_full_es = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+  var days_full = LANG==='es' ? days_full_es : days_full_en;
+
+  function buildRunningRoutine(routine) {
+    if(!routine || routine.length===0) return '';
+    var html = '';
+    routine.forEach(function(blk) {
+      var drill = RUNNING_DRILLS.find(function(d){return d.name===blk.type||blk.type.indexOf(d.name)>=0;});
+      var hasDetails = blk.pace||blk.hrzone||blk.distance||blk.duration;
+      html += '<div style="background:var(--sf2);border-radius:8px;padding:.75rem;margin-bottom:.5rem">' +
+        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:'+(blk.desc||hasDetails||drill?'.4rem':'.1rem')+'">' +
+        '<span style="background:var(--sf3);border:1px solid var(--bd);border-radius:5px;padding:.18rem .55rem;font-size:.68rem;font-weight:600;color:var(--tx2);flex-shrink:0">'+blk.type+'</span>' +
+        (blk.duration?'<span style="font-size:.75rem;color:var(--gold);font-weight:600">⏱ '+blk.duration+'</span>':'') +
+        (blk.distance?'<span style="font-size:.75rem;color:var(--blu);font-weight:600">📍 '+blk.distance+'</span>':'') +
+        (blk.hrzone?'<span style="font-size:.68rem;background:rgba(29,158,117,.15);color:var(--grn);border:1px solid rgba(29,158,117,.3);padding:.15rem .45rem;border-radius:20px;flex-shrink:0">'+blk.hrzone+'</span>':'') +
+        (blk.pace?'<span style="font-size:.68rem;background:rgba(55,138,221,.12);color:var(--blu);border:1px solid rgba(55,138,221,.3);padding:.15rem .45rem;border-radius:20px;flex-shrink:0">'+blk.pace+'</span>':'') +
+        '</div>' +
+        (blk.desc?'<div style="font-size:.82rem;color:var(--tx2);line-height:1.55;margin-bottom:.35rem">'+blk.desc+'</div>':'') +
+        (drill&&drill.vid?'<div style="border-radius:8px;overflow:hidden;margin-top:.35rem"><iframe width="100%" height="145" src="https://www.youtube.com/embed/'+drill.vid+'?controls=1&rel=0&modestbranding=1" frameborder="0" allowfullscreen style="display:block"></iframe></div>'+(drill.tip?'<div style="font-size:.68rem;color:var(--tx3);margin-top:.2rem;font-style:italic">💡 '+drill.tip+'</div>':''):'') +
+        '</div>';
+    });
+    return html;
+  }
+
+  function buildGymRoutine(routine, circuits) {
+    var html = '';
+    // Render named circuits first
+    if(circuits && circuits.length > 0) {
+      circuits.forEach(function(circ, ci) {
+        html += '<div style="background:rgba(55,138,221,.05);border:1px solid rgba(55,138,221,.2);border-radius:10px;padding:.85rem;margin-bottom:.65rem">' +
+          '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap">' +
+          '<span style="background:var(--blu);color:#fff;border-radius:5px;padding:.2rem .55rem;font-size:.68rem;font-weight:700">⚡ '+(LANG==='es'?'CIRCUITO':'CIRCUIT')+' '+(ci+1)+(circ.name?' — '+circ.name:'')+'</span>' +
+          '<span style="font-size:.72rem;color:var(--tx2)">'+(circ.rounds||3)+' '+(LANG==='es'?'rondas':'rounds')+'</span>' +
+          (circ.restBetween?'<span style="font-size:.68rem;color:var(--tx3)">'+( LANG==='es'?'desc entre ej:':'rest btw ex:') +' '+circ.restBetween+'</span>':'') +
+          (circ.restRounds?'<span style="font-size:.68rem;color:var(--tx3)">'+(LANG==='es'?'desc entre rondas:':'rest btw rounds:')+' '+circ.restRounds+'</span>':'') +
+          '</div>' +
+          '<div style="background:var(--sf2);border-radius:8px;padding:.5rem">' +
+          (circ.exercises||[]).map(function(ex,ei) {
+            var allEx = [].concat(EXERCISE_LIB.legs,EXERCISE_LIB.upper,EXERCISE_LIB.core,EXERCISE_LIB.mobility);
+            var found = allEx.find(function(e){return e.name===ex.exercise;});
+            return '<div style="padding:.5rem 0;border-bottom:1px solid var(--bd)">' +
+              '<div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap">' +
+              '<span style="font-size:.85rem;font-weight:500;flex:1;min-width:100px">'+(ei+1)+'. '+(ex.exercise||'—')+'</span>' +
+              '<span style="font-size:.75rem;color:var(--gold);font-weight:600;white-space:nowrap">'+(ex.sets||3)+'×'+(ex.reps||12)+(ex.load?' · '+ex.load:'')+'</span>' +
+              '</div>' +
+              (found&&found.tip?'<div style="font-size:.68rem;color:var(--tx3);margin-top:.2rem;font-style:italic">💡 '+found.tip+'</div>':'') +
+              (found&&found.vid?'<div style="margin-top:.4rem;border-radius:6px;overflow:hidden"><iframe width="100%" height="115" src="https://www.youtube.com/embed/'+found.vid+'?controls=1&rel=0&modestbranding=1" frameborder="0" allowfullscreen style="display:block"></iframe></div>':'') +
+              '</div>';
+          }).join('') +
+          '</div>' +
+          (circ.notes?'<div style="font-size:.78rem;color:var(--gold);margin-top:.5rem;padding:.4rem .65rem;background:rgba(201,168,76,.07);border-radius:6px">💬 '+circ.notes+'</div>':'') +
+          '</div>';
+      });
+    }
+    // Individual exercises
+    if(routine && routine.length > 0) {
+      if(circuits && circuits.length > 0) {
+        html += '<div style="font-size:.72rem;color:var(--tx2);font-weight:600;margin:.5rem 0 .35rem;text-transform:uppercase;letter-spacing:.5px">'+(LANG==='es'?'Ejercicios Individuales':'Individual Exercises')+'</div>';
+      }
+      routine.forEach(function(ex) {
+        var allEx = [].concat(EXERCISE_LIB.legs,EXERCISE_LIB.upper,EXERCISE_LIB.core,EXERCISE_LIB.mobility);
+        var found = allEx.find(function(e){return e.name===ex.exercise;});
+        html += '<div style="background:var(--sf2);border-radius:8px;padding:.75rem;margin-bottom:.45rem">' +
+          '<div style="display:flex;align-items:center;gap:.65rem;flex-wrap:wrap;margin-bottom:'+(found&&found.vid?'.4rem':'.1rem')+'">' +
+          '<span style="font-size:.88rem;font-weight:600;flex:1">'+(ex.exercise||'—')+'</span>' +
+          '<span style="font-size:.78rem;color:var(--gold);font-weight:600">'+(ex.sets||3)+'×'+(ex.reps||12)+'</span>' +
+          (ex.load?'<span style="font-size:.72rem;color:var(--tx2)">'+ex.load+'</span>':'') +
+          (ex.rest?'<span style="font-size:.68rem;color:var(--tx3)">rest: '+ex.rest+'</span>':'') +
+          '</div>' +
+          (found&&found.tip?'<div style="font-size:.68rem;color:var(--tx3);margin-bottom:.3rem;font-style:italic">💡 '+found.tip+'</div>':'') +
+          (found&&found.vid?'<div style="border-radius:6px;overflow:hidden"><iframe width="100%" height="115" src="https://www.youtube.com/embed/'+found.vid+'?controls=1&rel=0&modestbranding=1" frameborder="0" allowfullscreen style="display:block"></iframe></div>':'') +
+          '</div>';
+      });
+    }
+    return html;
+  }
+
+  var rows = c.plan.map(function(s, i) {
+    var d = new Date(mon);
+    d.setDate(mon.getDate() + i);
+    var iT = d.toDateString()===today.toDateString() && WK===0;
+    var icon = s.t==='run'?'🏃':s.t==='gym'?'💪':'😴';
+    var bc = s.t==='run'?'rb':s.t==='gym'?'gb':'xb';
+    var tt = {run:LANG==='es'?'Correr':'Run',gym:'Gym',rest:LANG==='es'?'Descanso':'Rest'};
+
+    if(s.t==='rest') {
+      return '<div style="margin-bottom:.65rem"><div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.35rem">' +
+        '<div style="width:44px;text-align:center;font-size:.7rem;color:'+(iT?'var(--gold)':'var(--tx3)')+';font-weight:'+(iT?'700':'400')+'">'+days[i]+'<br><span style="font-size:.85rem">'+d.getDate()+'</span></div>' +
+        '<div style="flex:1;background:var(--sf);border:1px solid var(--bd);border-radius:10px;padding:.75rem;text-align:center;color:var(--tx3);font-size:.88rem;font-style:italic">😴 '+(s.title||'Rest')+(s.note?'<div style="font-size:.72rem;color:var(--gold);margin-top:.25rem">💬 '+s.note+'</div>':'')+'</div>' +
+        '</div></div>';
+    }
+
+    // Build full session detail
+    var hasRoutine = (s.routine&&s.routine.length>0)||(s.circuits&&s.circuits.length>0);
+    var routineHtml = '';
+    if(s.t==='run') routineHtml = buildRunningRoutine(s.routine);
+    else if(s.t==='gym') routineHtml = buildGymRoutine(s.routine, s.circuits);
+
+    return '<div style="margin-bottom:.75rem">' +
+      // Day header
+      '<div style="display:flex;align-items:flex-start;gap:.5rem">' +
+      '<div style="width:44px;flex-shrink:0;text-align:center;font-size:.7rem;color:'+(iT?'var(--gold)':'var(--tx3)')+';font-weight:'+(iT?'700':'400')+';padding-top:.5rem">'+days[i]+'<br><span style="font-size:.85rem">'+d.getDate()+'</span></div>' +
+      '<div style="flex:1">' +
+      // Session card
+      '<div style="background:var(--sf);border:1px solid '+(iT?'rgba(201,168,76,.5)':'var(--bd)')+';border-radius:12px;overflow:hidden">' +
+      // Header bar
+      '<div style="padding:.75rem 1rem;background:'+(iT?'rgba(201,168,76,.08)':'var(--sf2)')+';display:flex;align-items:center;gap:.5rem;border-bottom:1px solid var(--bd)">' +
+      '<span style="font-size:1.1rem">'+icon+'</span>' +
+      '<div style="flex:1">' +
+      '<div style="font-weight:700;font-size:.9rem">'+s.title+'</div>' +
+      '<div style="font-size:.75rem;color:var(--tx2)">'+s.det+'</div>' +
+      '</div>' +
+      '<span class="bdg '+bc+'">'+tt[s.t]+'</span>' +
+      (s.completed?'<span style="font-size:.72rem;background:rgba(29,158,117,.15);color:var(--grn);border:1px solid rgba(29,158,117,.3);padding:.15rem .5rem;border-radius:20px">✓ '+(LANG==='es'?'Hecho':'Done')+'</span>':'') +
+      '</div>' +
+      // Coach note
+      (s.note?'<div style="padding:.5rem 1rem;background:rgba(201,168,76,.05);border-bottom:1px solid var(--bd);font-size:.78rem;color:var(--gold)">💬 '+s.note+'</div>':'') +
+      // Routine content (collapsible)
+      (hasRoutine?
+        '<div style="padding:.85rem 1rem">' +
+        '<div style="font-size:.68rem;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:.6rem">'+(s.t==='run'?(LANG==='es'?'Rutina de Carrera':'Running Routine'):(LANG==='es'?'Ejercicios':'Exercises'))+'</div>' +
+        routineHtml +
+        '</div>'
+      :'<div style="padding:.5rem 1rem"><div style="font-size:.78rem;color:var(--tx3);font-style:italic">'+(LANG==='es'?'Sin rutina detallada asignada aun':'No detailed routine assigned yet')+'</div></div>') +
+      // Log session footer
+      '<div style="padding:.65rem 1rem;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap">' +
+      (s.completed?
+        '<span style="font-size:.78rem;color:var(--grn)">✓ '+(LANG==='es'?'Sesion completada':'Session completed')+'</span>'
+      :
+        '<button onclick="openSessionLog('+i+')" style="padding:.38rem .85rem;border-radius:7px;border:1px solid var(--grn);background:transparent;color:var(--grn);font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit">+ '+(LANG==='es'?'Registrar sesion':'Log session')+'</button>'
+      ) +
+      '<button onclick="exportSessionPDF('+i+')" style="padding:.35rem .75rem;border-radius:7px;border:1px solid rgba(201,168,76,.4);background:rgba(201,168,76,.06);color:var(--gold);font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit">📄 PDF</button>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+
+  var pdfAllBtn = '<button onclick="exportTrainingPDF(CLIENTS[0])" style="padding:.4rem .9rem;border-radius:8px;border:1px solid rgba(201,168,76,.4);background:rgba(201,168,76,.08);color:var(--gold);font-size:.78rem;font-weight:600;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:.4rem">📄 '+(LANG==='es'?'PDF Plan Completo':'Full Plan PDF')+'</button>';
+
+  h('training',
+    '<div class="ph"><h2>'+t('training').toUpperCase()+'</h2>' +
+    '<p>'+(LANG==='es'?'Tu plan semanal completo':'Your complete weekly plan')+'</p>' +
+    '</div>' +
+    '<div class="nb red" style="margin-bottom:.75rem">🫀 '+(LANG==='es'?'Control medico anual recomendado para todos los atletas de resistencia.':'Annual health check recommended for all endurance athletes.')+'</div>' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem;flex-wrap:wrap;gap:.5rem">' +
+    '<div class="wknav" style="margin-bottom:0"><button class="wkbtn" onclick="WK--;renderPage(\'training\')">← '+(LANG==='es'?'Ant':'Prev')+'</button><span style="padding:0 .75rem;font-size:.88rem;font-weight:500">'+mon.toLocaleDateString(locale(),{month:'long',day:'numeric'})+'</span><button class="wkbtn" onclick="WK++;renderPage(\'training\')">'+(LANG==='es'?'Sig':'Next')+' →</button></div>' +
+    pdfAllBtn +
+    '</div>' +
+    rows
+  );
+}
+
+function exportSessionPDF(dayIdx) {
+  var c = CLIENTS[0];
+  var s = c.plan[dayIdx];
+  if(!s) return;
+
+  var days_full_en = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var days_full_es = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+  var dayName = (LANG==='es'?days_full_es:days_full_en)[dayIdx];
+
+  function buildRunRows(routine) {
+    if(!routine||!routine.length) return '';
+    var html = '<div style="margin-top:12px"><div style="font-size:.68rem;font-weight:700;color:#C9A84C;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee">'+(LANG==='es'?'Rutina de Carrera':'Running Routine')+'</div>';
+    routine.forEach(function(blk) {
+      var drill = RUNNING_DRILLS.find(function(d){return d.name===blk.type||blk.type.indexOf(d.name)>=0;});
+      var videoUrl = drill ? ytUrl(drill.vid) : '';
+      html += '<div style="padding:8px 0;border-bottom:1px solid #f5f5f5">' +
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+        '<span style="background:#f5f5f5;border-radius:4px;padding:2px 8px;font-size:.68rem;font-weight:600;color:#555">'+blk.type+'</span>' +
+        (blk.duration?'<span style="font-size:.75rem;color:#C9A84C;font-weight:600">⏱ '+blk.duration+'</span>':'') +
+        (blk.distance?'<span style="font-size:.75rem;color:#1a73e8">📍 '+blk.distance+'</span>':'') +
+        (blk.pace?'<span style="font-size:.68rem;background:#e8f4fd;color:#1a73e8;padding:2px 8px;border-radius:10px">'+blk.pace+'</span>':'') +
+        (blk.hrzone?'<span style="font-size:.68rem;background:#e8f8f1;color:#1D9E75;padding:2px 8px;border-radius:10px">'+blk.hrzone+'</span>':'') +
+        '</div>' +
+        (blk.desc?'<div style="font-size:.82rem;color:#444;line-height:1.55">'+blk.desc+'</div>':'') +
+        (videoUrl?'<div class="video-link-row" style="margin-top:6px"><span class="video-label">'+blk.type+'</span><a href="'+videoUrl+'" class="video-url">'+videoUrl+'</a><img class="qr-code" src="'+qrUrl(videoUrl)+'" alt="QR"></div>':'') +
+        (drill&&drill.tip?'<div style="font-size:.68rem;color:#888;font-style:italic">💡 '+drill.tip+'</div>':'') +
+        '</div>';
+    });
+    return html + '</div>';
+  }
+
+  function buildGymRows(routine, circuits) {
+    var html = '';
+    if(circuits&&circuits.length) {
+      circuits.forEach(function(circ,ci) {
+        html += '<div style="background:#f0f7ff;border:1px solid #b3d9f7;border-radius:8px;padding:10px;margin:8px 0">' +
+          '<div style="font-size:.72rem;font-weight:700;color:#1a73e8;margin-bottom:6px">⚡ '+(LANG==='es'?'CIRCUITO':'CIRCUIT')+' '+(ci+1)+(circ.name?' — '+circ.name:'')+' · '+(circ.rounds||3)+' '+(LANG==='es'?'rondas':'rounds')+'</div>' +
+          (circ.exercises||[]).map(function(ex,ei) {
+            var allEx=[].concat(EXERCISE_LIB.legs,EXERCISE_LIB.upper,EXERCISE_LIB.core,EXERCISE_LIB.mobility);
+            var found=allEx.find(function(e){return e.name===ex.exercise;});
+            var vUrl = found?ytUrl(found.vid):'';
+            return '<div style="padding:5px 0;border-bottom:1px solid #dce8f7">' +
+              '<div style="display:flex;align-items:center;gap:8px">' +
+              '<span style="font-size:.85rem;font-weight:500;flex:1">'+(ei+1)+'. '+(ex.exercise||'—')+'</span>' +
+              '<span style="font-size:.75rem;color:#C9A84C;font-weight:600">'+(ex.sets||3)+'×'+(ex.reps||12)+(ex.load?' · '+ex.load:'')+'</span>' +
+              '</div>' +
+              (vUrl?'<div class="video-link-row" style="margin-top:4px"><span class="video-label">'+ex.exercise+'</span><a href="'+vUrl+'" class="video-url">'+vUrl+'</a><img class="qr-code" src="'+qrUrl(vUrl)+'" alt="QR"></div>':'') +
+              (found&&found.tip?'<div style="font-size:.68rem;color:#888;font-style:italic">💡 '+found.tip+'</div>':'') +
+              '</div>';
+          }).join('') +
+          (circ.notes?'<div style="font-size:.75rem;color:#C9A84C;margin-top:5px">💬 '+circ.notes+'</div>':'') +
+          '</div>';
+      });
+    }
+    if(routine&&routine.length) {
+      routine.forEach(function(ex) {
+        var allEx=[].concat(EXERCISE_LIB.legs,EXERCISE_LIB.upper,EXERCISE_LIB.core,EXERCISE_LIB.mobility);
+        var found=allEx.find(function(e){return e.name===ex.exercise;});
+        var vUrl = found?ytUrl(found.vid):'';
+        html += '<div style="padding:7px 0;border-bottom:1px solid #f0f0f0">' +
+          '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span style="font-size:.85rem;font-weight:500;flex:1">'+(ex.exercise||'—')+'</span>' +
+          '<span style="font-size:.75rem;color:#C9A84C;font-weight:600">'+(ex.sets||3)+'×'+(ex.reps||12)+(ex.load?' · '+ex.load:'')+'</span>' +
+          '</div>' +
+          (vUrl?'<div class="video-link-row" style="margin-top:4px"><span class="video-label">'+ex.exercise+'</span><a href="'+vUrl+'" class="video-url">'+vUrl+'</a><img class="qr-code" src="'+qrUrl(vUrl)+'" alt="QR"></div>':'') +
+          '</div>';
+      });
+    }
+    return html;
+  }
+
+  var sessionBody = '';
+  if(s.t==='run') sessionBody = buildRunRows(s.routine);
+  else if(s.t==='gym') sessionBody = buildGymRows(s.routine, s.circuits);
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+s.title+' — '+c.name+'</title>' + buildPDFStyles() + '</head><body>' +
+    '<div class="pdf-header"><div class="pdf-logo">FinisherFlow</div><div class="pdf-meta"><div style="font-weight:600">'+c.name+'</div><div>'+dayName+' — '+s.title+'</div><div style="margin-top:2px">'+new Date().toLocaleDateString()+'</div></div></div>' +
+    '<div class="pdf-title">'+(s.t==='run'?'🏃':s.t==='gym'?'💪':'😴')+' '+s.title+'</div>' +
+    '<div class="pdf-sub">'+s.det+'</div>' +
+    (s.note?'<div style="background:#fffbf0;border-left:3px solid #C9A84C;padding:8px 12px;border-radius:0 6px 6px 0;font-size:.82rem;color:#555;margin-bottom:12px">💬 <strong>'+(LANG==='es'?'Nota del Coach:':'Coach Note:')+'</strong> '+s.note+'</div>':'') +
+    sessionBody +
+    '<div style="margin-top:20px;padding:12px;background:#f9f9f9;border-radius:8px;font-size:.78rem;color:#888">' +
+    '<strong>'+(LANG==='es'?'Instrucciones:':'Instructions:')+'</strong> '+(LANG==='es'?'Escanea los codigos QR con la camara de tu telefono para ver los videos de tecnica. O haz clic en los links si estas viendo esto en pantalla.':'Scan the QR codes with your phone camera to watch technique videos. Or tap the links if viewing on screen.') +
+    '</div>' +
+    '<div class="footer"><div class="footer-logo">FinisherFlow</div><div class="footer-note">FinisherFlow.com · '+(LANG==='es'?'Tu plan de entrenamiento personalizado':'Your personalized training plan')+'</div></div>' +
+    '</body></html>';
+
+  openPrintWindow(html, dayName.toLowerCase()+'-'+s.title.replace(/\s+/g,'-').toLowerCase());
+}
+
+
+
+function openSessionLog(idx) {
+  var c = CLIENTS[0]; var s = c.plan[idx];
+  var icon = s.t==='run'?'🏃':s.t==='gym'?'💪':'😴';
+  var modal = document.createElement('div');
+  modal.id = 'log-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:16px;padding:1.75rem;width:100%;max-width:420px;max-height:85vh;overflow-y:auto">'+
+    '<div style="font-size:1.2rem;font-weight:700;margin-bottom:1rem">'+icon+' '+(LANG==='es'?'Registrar Sesion':'Log Session')+': '+s.title+'</div>'+
+    '<div style="margin-bottom:.75rem"><label style="font-size:.72rem;color:var(--tx2);display:block;margin-bottom:.35rem;text-transform:uppercase">'+(LANG==='es'?'Como te sentiste? (1-10)':'How did you feel? (1-10)')+'</label>'+
+    '<div style="display:flex;gap:.35rem">'+[1,2,3,4,5,6,7,8,9,10].map(function(n){return '<button id="rpe-'+n+'" onclick="selectRPE('+n+')" style="flex:1;padding:.45rem;border-radius:6px;border:1px solid var(--bd);background:transparent;color:var(--tx2);font-size:.78rem;font-weight:600;cursor:pointer">'+n+'</button>';}).join('')+'</div></div>'+
+    (s.t==='run'?'<div style="margin-bottom:.75rem"><label style="font-size:.72rem;color:var(--tx2);display:block;margin-bottom:.35rem;text-transform:uppercase">'+(LANG==='es'?'Distancia real (km)':'Actual distance (km)')+'</label><input type="number" step="0.1" id="log-km" placeholder="8.5" style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.6rem .85rem;color:var(--tx);font-size:.88rem;outline:none"></div>'+
+    '<div style="margin-bottom:.75rem"><label style="font-size:.72rem;color:var(--tx2);display:block;margin-bottom:.35rem;text-transform:uppercase">'+(LANG==='es'?'Tiempo (mm:ss por km o total)':'Time (pace or total)')+'</label><input type="text" id="log-time" placeholder="5:30 /km" style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.6rem .85rem;color:var(--tx);font-size:.88rem;outline:none"></div>':'<div style="margin-bottom:.75rem"><label style="font-size:.72rem;color:var(--tx2);display:block;margin-bottom:.35rem;text-transform:uppercase">'+(LANG==='es'?'Duracion (minutos)':'Duration (minutes)')+'</label><input type="number" id="log-dur" placeholder="60" style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.6rem .85rem;color:var(--tx);font-size:.88rem;outline:none"></div>')+
+    '<div style="margin-bottom:.75rem"><label style="font-size:.72rem;color:var(--tx2);display:block;margin-bottom:.35rem;text-transform:uppercase">'+(LANG==='es'?'Notas / Como te fue?':'Notes / How did it go?')+'</label><textarea id="log-notes" style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.6rem .85rem;color:var(--tx);font-size:.85rem;outline:none;resize:none;min-height:65px" placeholder="'+(LANG==='es'?'Ej: Bien, las piernas pesadas al principio...':'e.g. Good, legs heavy at first...')+'"></textarea></div>'+
+    '<div style="display:flex;gap:.5rem">'+
+    '<button onclick="saveSessionLog('+idx+')" style="flex:1;padding:.65rem;background:var(--gold);border:none;border-radius:8px;color:#0C0C0F;font-weight:700;cursor:pointer">'+(LANG==='es'?'Guardar':'Save')+'</button>'+
+    '<button onclick="document.getElementById(\'log-modal\').remove()" style="flex:1;padding:.65rem;background:transparent;border:1px solid var(--bd);border-radius:8px;color:var(--tx2);cursor:pointer">'+(LANG==='es'?'Cancelar':'Cancel')+'</button>'+
+    '</div></div>';
+  document.body.appendChild(modal);
+}
+
+var currentRPE = 0;
+function selectRPE(n) {
+  currentRPE = n;
+  for(var i=1;i<=10;i++){
+    var b=document.getElementById('rpe-'+i);
+    if(b){b.style.background=i<=n?'rgba(201,168,76,.2)':'transparent';b.style.borderColor=i<=n?'var(--gold)':'var(--bd)';b.style.color=i<=n?'var(--gold)':'var(--tx2)';}
+  }
+}
+
+function saveSessionLog(idx) {
+  CLIENTS[0].plan[idx].completed = true;
+  document.getElementById('log-modal').remove();
+  toast(LANG==='es'?'Sesion registrada! Coach notificado.':'Session logged! Coach notified.');
+  renderPage('training');
+}
+
+
+function rCheckins() {
+  var sdata = {morning:{icon:'🌅',en:'Morning',es:'Manana'},midday:{icon:'☀️',en:'Midday',es:'Mediodia'},afternoon:{icon:'🌆',en:'Afternoon',es:'Tarde'},night:{icon:'🌙',en:'Night',es:'Noche'}};
+  var emj = ['😔','😕','😐','🙂','😄'];
+  var html = SLOTS.map(function(s){ var sd=sdata[s.id]; return '<div style="background:var(--sf2);border:1px solid '+(s.rec?'var(--grn)':s.recording?'var(--red)':'var(--bd)')+';border-radius:12px;padding:1rem;margin-bottom:.85rem"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.65rem"><div><div style="font-size:1.4rem">'+sd.icon+'</div><div style="font-size:.82rem;font-weight:600;margin-top:.15rem">'+(LANG==='es'?sd.es:sd.en)+'</div></div><button onclick="toggleRec(\''+s.id+'\')" style="padding:.45rem .85rem;border-radius:8px;border:1px solid '+(s.recording?'var(--red)':s.rec?'var(--grn)':'var(--gold)')+';background:transparent;color:'+(s.recording?'var(--red)':s.rec?'var(--grn)':'var(--gold)')+';cursor:pointer;font-size:.82rem;font-weight:600">'+(s.recording?(LANG==='es'?'Parar':'Stop'):s.rec?(LANG==='es'?'Grabado':'Recorded'):'🎙 '+(LANG==='es'?'Grabar':'Record'))+'</button></div><div style="display:flex;gap:.35rem;margin-bottom:.6rem">'+emj.map(function(e){ return '<button style="flex:1;padding:.4rem;border:1px solid var(--bd);border-radius:6px;background:transparent;font-size:1rem;cursor:pointer" onclick="toast(\'ok\')">'+e+'</button>'; }).join('')+'</div><textarea style="width:100%;background:transparent;border:1px solid var(--bd);border-radius:7px;padding:.5rem .7rem;color:var(--tx);font-size:.82rem;outline:none;resize:none;min-height:55px" placeholder="'+(LANG==='es'?'O escribe una nota...':'Or type a note...')+'"></textarea>'+(s.tr?'<div style="font-size:.75rem;color:var(--tx2);background:var(--sf);border-left:2px solid var(--grn);padding:.4rem .65rem;margin-top:.5rem;font-style:italic">'+s.tr+'</div>':'')+'</div>'; }).join('');
+  h('checkins', '<div class="ph"><h2>'+t('checkins').toUpperCase()+'</h2></div>'+html+'<button class="btn p" onclick="toast(\'ok\')">'+t('savecheckin')+'</button>');
+}
+
+function rMindset() {
+  h('mindset', '<div class="ph"><h2>'+t('mindset').toUpperCase()+'</h2></div>' +
+    '<div class="g2" style="gap:1rem">' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.75rem">'+(LANG==='es'?'Desafio Semanal':'Weekly Challenge')+'</div>' +
+    '<div style="background:var(--sf2);border-left:3px solid var(--gold);padding:.85rem;border-radius:0 8px 8px 0;font-size:.88rem;line-height:1.65">'+(LANG==='es'?'Antes de cada sesion esta semana, toma 2 minutos para visualizar que la completas.':'"Before each session this week, take 2 minutes to visualize completing it."')+'</div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.5rem">'+(LANG==='es'?'Diario':'Journal')+'</div>' +
+    '<textarea style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.65rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical;min-height:80px" placeholder="'+(LANG==='es'?'Escribe tu reflexion...':'Write your reflection...')+'"></textarea>' +
+    '<button class="btn p sm" style="margin-top:.5rem" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar':'Save')+'</button></div>' +
+    '</div>');
+}
+
+function rNutrition() {
+  h('nutrition', '<div class="ph"><h2>'+t('nutrition').toUpperCase()+'</h2></div>' +
+    '<div class="nb blue">'+( LANG==='es'?'Solo recomendaciones generales. Consulta siempre un nutricionista profesional.':'General recommendations only. Always consult a qualified nutritionist.')+'</div>' +
+    '<div class="g2" style="gap:1rem">' +
+    '<div><div style="background:var(--sf2);border-radius:10px;padding:.9rem;margin-bottom:.65rem"><div style="font-size:.82rem;font-weight:600;margin-bottom:.4rem">'+(LANG==='es'?'Pre-Entrenamiento':'Pre-Training')+'</div><div style="font-size:.8rem;color:var(--tx2);line-height:1.75">'+(LANG==='es'?'1-2h antes: carbohidratos + proteina liviana. Avena + banana, tostada + huevos.':'1-2h before: carbs + light protein. Oats + banana, toast + eggs.')+'</div></div>' +
+    '<div style="background:var(--sf2);border-radius:10px;padding:.9rem"><div style="font-size:.82rem;font-weight:600;margin-bottom:.4rem">'+(LANG==='es'?'Post-Entrenamiento':'Post-Training')+'</div><div style="font-size:.8rem;color:var(--tx2);line-height:1.75">'+(LANG==='es'?'Dentro de 30min: proteina + carbos. 20-30g de proteina para la recuperacion.':'Within 30min: protein + carbs. Aim 20-30g protein for recovery.')+'</div></div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.6rem">'+(LANG==='es'?'Hidratacion Diaria':'Daily Hydration')+'</div>' +
+    '<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem"><span style="font-size:.85rem;color:var(--tx2)">'+(LANG==='es'?'Hoy:':'Today:')+'</span><input type="number" step="0.1" value="1.8" style="width:58px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.4rem .65rem;color:var(--tx);font-size:.85rem;outline:none"><span style="font-size:.85rem;color:var(--tx2)">L / 2.5L</span></div>' +
+    '<div class="pb-wrap"><div class="pb" style="width:72%;background:var(--blu)"></div></div></div>' +
+    '</div>');
+}
+
+function rSleep() {
+  h('sleep', '<div class="ph"><h2>'+t('sleepl').toUpperCase()+'</h2></div>' +
+    '<div class="g2" style="gap:1rem"><div class="card">' +
+    '<div style="font-weight:600;margin-bottom:.9rem">'+(LANG==='es'?'Registrar Sueno de Anoche':'Log Last Nights Sleep')+'</div>' +
+    '<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.65rem"><label style="font-size:.82rem;color:var(--tx2);width:110px">'+(LANG==='es'?'Hora de dormir':'Bedtime')+'</label><input type="time" value="22:30" style="background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .7rem;color:var(--tx);font-size:.85rem;outline:none"></div>' +
+    '<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.65rem"><label style="font-size:.82rem;color:var(--tx2);width:110px">'+(LANG==='es'?'Hora de despertar':'Wake time')+'</label><input type="time" value="06:30" style="background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .7rem;color:var(--tx);font-size:.85rem;outline:none"></div>' +
+    '<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.65rem"><label style="font-size:.82rem;color:var(--tx2);width:110px">'+(LANG==='es'?'Horas dormidas':'Hours slept')+'</label><input type="number" step="0.5" value="8" style="width:60px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .7rem;color:var(--tx);font-size:.85rem;outline:none"></div>' +
+    '<button class="btn p sm" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar':'Save')+'</button></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.65rem">'+(LANG==='es'?'Consejos del Coach':'Coach Tips')+'</div><div style="font-size:.82rem;line-height:1.85;color:var(--tx2)">'+(LANG==='es'?'8h antes de tiradas largas. Sin pantallas 1h antes de dormir. Habitacion a 18-20C. Horarios consistentes.':'8h on days before long runs. No screens 1h before sleep. Room 18-20C. Consistent schedule.')+'</div></div></div>');
+}
+
+function rProgress() {
+  var areas_en = [{l:'Training',p:83,c:'var(--grn)'},{l:'Mindset',p:72,c:'var(--gold)'},{l:'Nutrition',p:65,c:'var(--blu)'},{l:'Sleep',p:87,c:'var(--grn)'}];
+  var areas_es = [{l:'Entrenamiento',p:83,c:'var(--grn)'},{l:'Mentalidad',p:72,c:'var(--gold)'},{l:'Nutricion',p:65,c:'var(--blu)'},{l:'Sueno',p:87,c:'var(--grn)'}];
+  var areas = LANG==='es'?areas_es:areas_en;
+  h('progress', '<div class="ph"><h2>'+t('progress').toUpperCase()+'</h2></div>' +
+    '<div class="g4" style="gap:.65rem;margin-bottom:1.25rem">' +
+    '<div class="stat"><label>Flow Score</label><div class="v gold">76</div><div class="s">/100</div></div>' +
+    '<div class="stat"><label>'+t('sessions')+'</label><div class="v grn">5</div></div>' +
+    '<div class="stat"><label>'+t('mood')+'</label><div class="v">4.2</div></div>' +
+    '<div class="stat"><label>'+t('sleepl')+'</label><div class="v">7.8h</div></div>' +
+    '</div>' +
+    '<div class="card">'+areas.map(function(a){ return '<div style="margin-bottom:.85rem"><div class="pb-lbl"><span>'+a.l+'</span><span>'+a.p+'%</span></div><div class="pb-wrap"><div class="pb" style="width:'+a.p+'%;background:'+a.c+'"></div></div></div>'; }).join('')+'</div>');
+}
+
+function rCourses() {
+  var role = PROFILE && PROFILE.role;
+  var coursesHtml = '<div class="g3">' +
+    COURSES_DATA.map(function(c){
+      return '<div class="course-card" onclick="openCourse(\''+c.id+'\',false)">' +
+        '<div class="ct">'+c.emoji+'</div>' +
+        '<div style="padding:.85rem">' +
+        '<div style="font-size:.62rem;color:var(--gold);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:.25rem">'+c.cat+'</div>' +
+        '<div style="font-weight:600;font-size:.88rem;margin-bottom:.25rem">'+c.title+'</div>' +
+        '<div style="font-size:.75rem;color:var(--tx2);margin-bottom:.5rem">'+c.desc.substring(0,60)+'...</div>' +
+        '<div style="font-size:1.1rem;font-weight:900;color:var(--gold)">USD '+c.price+'</div>' +
+        '</div></div>';
+    }).join('') +
+    '</div>';
+
+  h('courses',
+    '<div class="ph"><h2>'+t('courses').toUpperCase()+'</h2><p>'+(LANG==='es'?'Aprende · Entrena · Crece':'Learn · Train · Grow')+'</p></div>' +
+    coursesHtml +
+    '<div class="card" style="margin-top:1.5rem"><div style="font-weight:600;margin-bottom:.4rem">'+t('coursesfeedback')+'</div>' +
+    '<textarea style="width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.65rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical;min-height:70px;margin-bottom:.65rem" placeholder="'+(LANG==='es'?'Ej. Elongacion para corredores...':'e.g. Stretching for runners...')+'"></textarea>' +
+    '<button class="btn p sm" onclick="toast(\'ok\')">'+t('cfsend')+'</button></div>');
+}
+
+function openCourse(courseId, editMode) {
+  var c = COURSES_DATA.find(function(x){return x.id===parseInt(courseId);});
+  if(!c) return;
+  var isAdmin = hasPermission('admin');
+  var el = document.getElementById('page-courses');
+
+  var lessonsHtml = c.lessons.map(function(l, li){
+    var freeTag = l.free ? '<span style="font-size:.68rem;background:rgba(29,158,117,.15);color:var(--grn);border:1px solid rgba(29,158,117,.3);padding:.12rem .45rem;border-radius:20px">'+(LANG==='es'?'Gratis':'Free')+'</span>' : '<span style="font-size:.68rem;background:var(--sf2);color:var(--tx3);border:1px solid var(--bd);padding:.12rem .45rem;border-radius:20px">🔒</span>';
+
+    if(editMode && isAdmin){
+      return '<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:.85rem;margin-bottom:.6rem">' +
+        '<div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.6rem">' +
+        '<span style="background:var(--sf3);border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:.72rem;color:var(--tx3);flex-shrink:0">'+(li+1)+'</span>' +
+        '<input type="text" value="'+l.title+'" onchange="COURSES_DATA.find(x=>x.id==='+c.id+').lessons['+li+'].title=this.value" style="flex:1;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.4rem .65rem;color:var(--tx);font-size:.85rem;outline:none">' +
+        freeTag +
+        '<button onclick="COURSES_DATA.find(x=>x.id==='+c.id+').lessons['+li+'].free=!COURSES_DATA.find(x=>x.id==='+c.id+').lessons['+li+'].free;openCourse('+c.id+',true)" style="background:transparent;border:1px solid var(--bd);border-radius:5px;padding:.25rem .5rem;color:var(--tx3);font-size:.7rem;cursor:pointer">'+(LANG==='es'?'Toggle libre':'Toggle free')+'</button>' +
+        '<button onclick="COURSES_DATA.find(x=>x.id==='+c.id+').lessons.splice('+li+',1);openCourse('+c.id+',true)" style="background:transparent;border:1px solid var(--red);border-radius:5px;padding:.25rem .45rem;color:var(--red);font-size:.72rem;cursor:pointer">✕</button>' +
+        '</div>' +
+        '<textarea style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.5rem .65rem;color:var(--tx);font-size:.82rem;outline:none;resize:vertical;min-height:70px;margin-bottom:.5rem" onchange="COURSES_DATA.find(x=>x.id==='+c.id+').lessons['+li+'].content=this.value" placeholder="'+(LANG==='es'?'Contenido de la leccion...':'Lesson content...')+'">'+l.content+'</textarea>' +
+        // Video URL
+        '<div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.4rem">' +
+        '<input type="text" value="'+(l.video_url||'')+'" onchange="COURSES_DATA.find(x=>x.id==='+c.id+').lessons['+li+'].video_url=this.value" placeholder="YouTube URL or embed ID" style="flex:1;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.4rem .65rem;color:var(--tx);font-size:.78rem;outline:none">' +
+        '<span style="font-size:.72rem;color:var(--tx3)">🎬 Video</span></div>' +
+        // Duration
+        '<div style="display:flex;gap:.5rem;align-items:center">' +
+        '<input type="text" value="'+(l.duration||'')+'" onchange="COURSES_DATA.find(x=>x.id==='+c.id+').lessons['+li+'].duration=this.value" placeholder="10 min" style="width:80px;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.4rem .65rem;color:var(--tx);font-size:.78rem;outline:none">' +
+        '<span style="font-size:.72rem;color:var(--tx3)">⏱ Duration</span></div>' +
+        '</div>';
+    } else {
+      // Client view
+      var canView = l.free;
+      return '<div style="display:flex;align-items:flex-start;gap:10px;padding:.65rem 0;border-bottom:1px solid var(--bd)">' +
+        '<div style="width:28px;height:28px;border-radius:50%;background:'+(l.free?'var(--grn)':'var(--sf2)')+';display:flex;align-items:center;justify-content:center;font-size:.72rem;color:'+(l.free?'#fff':'var(--tx3)')+';flex-shrink:0;margin-top:2px">'+(l.free?(li+1):'🔒')+'</div>' +
+        '<div style="flex:1">' +
+        '<div style="font-size:.88rem;font-weight:500;margin-bottom:'+(canView&&l.content?'.4rem':'.15rem')+'">'+l.title+'</div>' +
+        (canView&&l.content?'<div style="font-size:.78rem;color:var(--tx2);line-height:1.65;margin-bottom:.4rem">'+l.content+'</div>':'') +
+        (canView&&l.video_url?'<div style="border-radius:8px;overflow:hidden;margin-bottom:.35rem"><iframe width="100%" height="180" src="'+l.video_url+'" frameborder="0" allowfullscreen style="display:block"></iframe></div>':'') +
+        (l.duration?'<div style="font-size:.72rem;color:var(--tx3)">⏱ '+l.duration+'</div>':'') +
+        (!canView?'<div style="font-size:.72rem;color:var(--tx3);margin-top:.2rem">'+(LANG==='es'?'Compra el curso para acceder':'Purchase course to access')+'</div>':'') +
+        '</div>' +
+        freeTag +
+        '</div>';
+    }
+  }).join('');
+
+  var editBtn = isAdmin ? '<button class="btn '+(editMode?'p':'s')+' sm" onclick="openCourse('+c.id+','+(editMode?'false':'true')+')" style="margin-right:.5rem">'+(editMode?(LANG==='es'?'Vista Cliente':'Client View'):(LANG==='es'?'Editar Curso':'Edit Course'))+'</button>' : '';
+  var addLessonBtn = editMode&&isAdmin ? '<button onclick="COURSES_DATA.find(x=>x.id==='+c.id+').lessons.push({id:Date.now(),title:\'New Lesson\',free:false,type:\'video\',content:\'\',video_url:\'\',duration:\'\',resources:[]});openCourse('+c.id+',true)" class="btn s sm" style="margin-top:.65rem">'+(LANG==='es'?'+ Agregar Leccion':'+ Add Lesson')+'</button>' : '';
+
+  el.innerHTML = '<button class="btn s sm" style="margin-bottom:.85rem" onclick="rCourses()">← '+t('courses')+'</button>' +
+    '<div style="display:flex;align-items:flex-start;gap:1rem;margin-bottom:1rem;flex-wrap:wrap">' +
+    '<div style="font-size:3rem">'+c.emoji+'</div>' +
+    '<div style="flex:1">' +
+    '<div style="font-family:inherit;font-size:1.4rem;font-weight:900;letter-spacing:1px">'+(editMode&&isAdmin?'<input type="text" value="'+c.title+'" onchange="COURSES_DATA.find(x=>x.id==='+c.id+').title=this.value" style="background:transparent;border:none;border-bottom:1px solid var(--gold);color:var(--tx);font-size:1.4rem;font-weight:900;outline:none;width:100%">':c.title)+'</div>' +
+    '<div style="font-size:.85rem;color:var(--tx2);margin-top:.25rem">'+(editMode&&isAdmin?'<input type="text" value="'+c.desc+'" onchange="COURSES_DATA.find(x=>x.id==='+c.id+').desc=this.value" style="background:transparent;border:none;border-bottom:1px solid var(--bd);color:var(--tx2);font-size:.85rem;outline:none;width:100%">':c.desc)+'</div>' +
+    '<div style="margin-top:.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">' +
+    '<span style="font-family:inherit;font-size:1.4rem;font-weight:900;color:var(--gold)">USD '+(editMode&&isAdmin?'<input type="number" value="'+c.price+'" onchange="COURSES_DATA.find(x=>x.id==='+c.id+').price=parseInt(this.value)" style="width:70px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.3rem .5rem;color:var(--gold);font-size:1rem;outline:none">':c.price)+'</span>' +
+    editBtn +
+    '<button class="btn p sm" onclick="toast(LANG===\'es\'?\'Sistema de pago proximamente\':\'Payment system coming soon\')">'+(LANG==='es'?'Comprar Curso':'Buy Course')+'</button>' +
+    '</div></div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.85rem">'+(LANG==='es'?'Contenido del Curso':'Course Content')+'</div>' +
+    lessonsHtml + addLessonBtn + '</div>';
+
+  // PDF export button
+  var pdfBtn = document.createElement('button');
+  pdfBtn.style.cssText = 'padding:.45rem .9rem;border-radius:8px;border:1px solid rgba(201,168,76,.4);background:rgba(201,168,76,.08);color:var(--gold);font-size:.78rem;font-weight:600;cursor:pointer;margin-top:1rem;font-family:inherit;display:block';
+  pdfBtn.innerHTML = '📄 ' + (LANG==='es'?'Descargar PDF':'Download PDF');
+  pdfBtn.onclick = function(){ exportCoursePDF(c.id); };
+  el.appendChild(pdfBtn);
+}
+
+function createCourse(){
+  var newCourse = {
+    id: COURSES_DATA.length+1, emoji:'📚', cat:'Running',
+    title:'New Course', desc:'Course description',
+    price:49,
+    lessons:[{id:1,title:'Lesson 1 — Introduction',free:true,type:'video',content:'',video_url:'',duration:'',resources:[]}]
+  };
+  COURSES_DATA.push(newCourse);
+  openCourse(newCourse.id, true);
+  // Switch to courses page
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('page-courses').classList.add('active');
+}
+
+
+function rClients() {
+  h('clients', '<div class="ph"><h2>'+t('clients').toUpperCase()+'</h2><p>'+t('tapmanage')+'</p></div>' +
+    '<div style="display:flex;justify-content:flex-end;margin-bottom:1rem"><button class="btn p sm" onclick="goTo(\'intake\')">'+t('newclient')+'</button></div>' +
+    '<div class="card" style="padding:0;overflow:hidden">' +
+    CLIENTS.map(function(c){ return '<div class="client-row" onclick="openClient('+c.id+')"><div class="cav">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+c.goal+' - '+c.level+' - '+c.km+'km/wk</div></div><div style="margin-right:.5rem">'+(c.mood>=4?'😄':c.mood>=3?'🙂':'😕')+'</div><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span></div>'; }).join('') +
+    '</div>');
+}
+
+function openClient(id) {
+  CURRENT_CLIENT = CLIENTS.find(function(c){ return c.id===id; });
+  CLIENT_TAB = 'plan';
+  goTo('client-detail');
+}
+
+function rClientDetail() {
+  var c = CURRENT_CLIENT;
+  if(!c){ h('client-detail','<button class="btn s sm" onclick="goTo(\'clients\')">'+t('backclients')+'</button>'); return; }
+  var tabs = [{k:'plan',l:t('trainingplan')},{k:'profile',l:t('profiletab')},{k:'stats',l:t('stats')},{k:'access',l:t('accesstab')}];
+  var tabHtml = '<div class="tabs">' + tabs.map(function(tb){ return '<button class="tab'+(CLIENT_TAB===tb.k?' active':'')+'" onclick="CLIENT_TAB=\''+tb.k+'\';rClientDetail()">'+tb.l+'</button>'; }).join('') + '</div>';
+  var content = '';
+  if(CLIENT_TAB==='plan'){
+    var days_en=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    var days_es=['Lun','Mar','Mie','Jue','Vie','Sab','Dom'];
+    var days=LANG==='es'?days_es:days_en;
+    var tt={run:LANG==='es'?'Correr':'Run',gym:'Gym',rest:LANG==='es'?'Descanso':'Rest'};
+    content = c.plan.map(function(s,i){ var bc=s.t==='run'?'rb':s.t==='gym'?'gb':'xb'; return '<div class="day-row"><div class="dlbl">'+days[i]+'</div><div class="sess-block"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem"><span style="font-weight:600;font-size:.88rem">'+s.title+'</span><div style="display:flex;gap:.4rem"><span class="bdg '+bc+'">'+tt[s.t]+'</span><button class="edit-btn" onclick="editSession('+i+')">✏️</button></div></div><div style="font-size:.78rem;color:var(--tx2)">'+s.det+'</div>'+(s.note?'<div style="font-size:.72rem;color:var(--gold);margin-top:.2rem">💬 '+s.note+'</div>':'')+'</div></div>'; }).join('');
+  } else if(CLIENT_TAB==='profile'){
+    content = '<div class="g2"><div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Nombre':'Name')+'</label><input type="text" value="'+c.name+'"></div>' +
+      '<div class="fld"><label>Email</label><input type="email" value="'+c.email+'"></div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Meta':'Goal')+'</label><input type="text" value="'+c.goal+'"></div>' +
+      '</div><div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Plan':'Tier')+'</label><select><option value="digital"'+(c.tier==='digital'?' selected':'')+'>'+(LANG==='es'?'Digital':'Digital')+'</option><option value="standard"'+(c.tier==='standard'?' selected':'')+'>'+(LANG==='es'?'Estandar':'Standard')+'</option><option value="premium"'+(c.tier==='premium'?' selected':'')+'>'+(LANG==='es'?'Premium':'Premium')+'</option></select></div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Lesiones':'Injuries')+'</label><input type="text" value="'+c.injuries+'"></div>' +
+      '<div class="fld"><label>'+(LANG==='es'?'Km/semana':'Weekly KM')+'</label><input type="number" value="'+c.km+'"></div>' +
+      '</div></div><button class="btn p sm" onclick="toast(\'ok\')">'+t('savechanges')+'</button>';
+  } else if(CLIENT_TAB==='stats'){
+    content = '<div class="g4" style="gap:.65rem;margin-bottom:1rem">' +
+      '<div class="stat"><label>'+t('mood')+'</label><div class="v gold">'+c.mood+'</div></div>' +
+      '<div class="stat"><label>'+t('sleepl')+'</label><div class="v grn">'+c.sleep+'h</div></div>' +
+      '<div class="stat"><label>'+t('sessions')+'</label><div class="v">'+c.sessions+'</div></div>' +
+      '<div class="stat"><label>'+t('streak')+'</label><div class="v gold">'+c.streak+'</div></div>' +
+      '</div>' +
+      '<div class="card"><div style="font-size:.85rem;line-height:2;color:var(--tx2)">' +
+      (LANG==='es'?'Km/semana':'Weekly km')+': <strong style="color:var(--tx)">'+c.km+'</strong><br>' +
+      (LANG==='es'?'Objetivo':'Target')+': <strong style="color:var(--tx)">'+c.target+'</strong></div></div>';
+  } else if(CLIENT_TAB==='access'){
+    var roles=['admin','coach','performance_coach','nutritionist'];
+    var rLabels=t('roles');
+    var dtypes_en=[['training','🏃 Training'],['nutrition','🥗 Nutrition'],['mindset','🧘 Mindset'],['sleep','😴 Sleep'],['checkins','🎙 Check-ins']];
+    var dtypes_es=[['training','🏃 Entrenamiento'],['nutrition','🥗 Nutricion'],['mindset','🧘 Mentalidad'],['sleep','😴 Sueno'],['checkins','🎙 Check-ins']];
+    var dtypes=LANG==='es'?dtypes_es:dtypes_en;
+    if(!c.access) c.access={training:['admin','coach'],nutrition:['admin'],mindset:['admin','coach'],sleep:['admin'],checkins:['admin','coach']};
+    content = '<div class="nb gold">'+(LANG==='es'?'Elegir quien puede ver los datos de '+c.name:'Choose who can see data for '+c.name)+'</div>' +
+      '<div class="card">' +
+      dtypes.map(function(dt){ return '<div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem 0;border-bottom:1px solid var(--bd);flex-wrap:wrap;gap:.5rem"><span>'+dt[1]+'</span><div style="display:flex;gap:.4rem;flex-wrap:wrap">' + roles.map(function(r){ var isOn=(c.access[dt[0]]||[]).indexOf(r)>=0; return '<button class="acc-chip'+(isOn?' on':'')+'" onclick="toggleAcc(\''+dt[0]+'\',\''+r+'\')">'+(isOn?'✓ ':'')+rLabels[r]+'</button>'; }).join('') + '</div></div>'; }).join('') +
+      '</div><button class="btn p sm" style="margin-top:.75rem" onclick="toast(\'ok\')">'+t('savechanges')+'</button>';
+  }
+  h('client-detail',
+    '<button class="btn s sm" style="margin-bottom:.85rem" onclick="goTo(\'clients\')">← '+t('backclients')+'</button>' +
+    '<div style="background:var(--sf);border:1px solid var(--bd);border-radius:12px;padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">' +
+    '<div class="cav" style="width:50px;height:50px;font-size:1rem">'+c.ini+'</div>' +
+    '<div style="flex:1"><div style="font-size:1.4rem;font-weight:900;letter-spacing:1px">'+c.name+'</div>' +
+    '<div style="font-size:.82rem;color:var(--tx2);margin-top:.1rem">'+c.goal+' - '+c.level+' - '+c.km+'km/wk</div>' +
+    '<div style="margin-top:.4rem;display:flex;gap:.4rem;flex-wrap:wrap"><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span><span style="font-size:.75rem;color:var(--tx2)">'+c.email+'</span></div></div>' +
+    '<div style="font-size:.82rem;color:var(--tx2)">😊 '+c.mood+' - 😴 '+c.sleep+'h</div></div>' +
+    tabHtml + content);
+}
+
+function editSession(idx) {
+  var c = CURRENT_CLIENT; var s = c.plan[idx];
+  if(!s.routine) s.routine=[];
+  if(!s.circuits) s.circuits=[];
+
+  var routineEditor = '';
+
+  if(s.t === 'run') {
+    var blockTypes = ['Warm-up','Easy Run','Long Run','Recovery Run','Tempo Run','Marathon Pace','Intervals','Fartlek','Hills','Progressive Run','Race Simulation','Track Session','Strength Drills','Mobility','A-Skip','B-Skip','High Knees','Butt Kicks','Carioca','Bounding','Strides','Cool-down','Cross-training','Rest'];
+    routineEditor = '<div style="font-weight:700;color:var(--gold);font-size:.88rem;letter-spacing:1px;text-transform:uppercase;margin:1rem 0 .65rem;padding-bottom:.35rem;border-bottom:1px solid var(--bd)">' +
+      (LANG==='es'?'Bloques de la Sesion':'Session Blocks') + '</div>' +
+      '<div class="nb blue" style="font-size:.75rem">'+(LANG==='es'?'Agrega bloques para estructurar el entrenamiento. Cada bloque puede tener ritmo objetivo, zona FC, distancia y video.':'Add blocks to structure the session. Each block can have target pace, HR zone, distance and video link.')+'</div>';
+
+    s.routine.forEach(function(b, bi) {
+      var drill = RUNNING_DRILLS.find(function(d){ return d.name===b.type||b.type.indexOf(d.name)>=0; });
+      var vidId = drill ? drill.vid : '';
+      routineEditor += '<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:.85rem;margin-bottom:.6rem">' +
+        '<div style="display:grid;grid-template-columns:1fr 80px auto;gap:.4rem;margin-bottom:.5rem;align-items:center">' +
+        '<select onchange="CURRENT_CLIENT.plan['+idx+'].routine['+bi+'].type=this.value;editSession('+idx+')" style="background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.4rem .6rem;color:var(--tx);font-size:.78rem;outline:none">' +
+        blockTypes.map(function(bl){ return '<option'+(b.type===bl?' selected':'')+'>'+bl+'</option>'; }).join('') +
+        '</select>' +
+        '<input type="text" value="'+(b.duration||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].routine['+bi+'].duration=this.value" placeholder="20min" style="background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.4rem .6rem;color:var(--tx);font-size:.78rem;outline:none">' +
+        '<button onclick="CURRENT_CLIENT.plan['+idx+'].routine.splice('+bi+',1);editSession('+idx+')" style="background:transparent;border:1px solid var(--red);border-radius:5px;padding:.3rem .5rem;color:var(--red);cursor:pointer;font-size:.75rem">✕</button>' +
+        '</div>' +
+        // Description
+        '<input type="text" value="'+(b.desc||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].routine['+bi+'].desc=this.value" placeholder="'+(LANG==='es'?'Descripcion del bloque...':'Block description...')+'" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.4rem .6rem;color:var(--tx);font-size:.78rem;outline:none;margin-bottom:.4rem">' +
+        // Pace + HR Zone + Distance row
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;margin-bottom:.4rem">' +
+        '<div><label style="font-size:.6rem;color:var(--tx3);display:block;margin-bottom:.2rem;text-transform:uppercase">'+( LANG==='es'?'Ritmo objetivo':'Target pace')+'</label><input type="text" value="'+(b.pace||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].routine['+bi+'].pace=this.value" placeholder="5:30/km" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.38rem .5rem;color:var(--tx);font-size:.78rem;outline:none"></div>' +
+        '<div><label style="font-size:.6rem;color:var(--tx3);display:block;margin-bottom:.2rem;text-transform:uppercase">'+( LANG==='es'?'Zona FC':'HR Zone')+'</label><select onchange="CURRENT_CLIENT.plan['+idx+'].routine['+bi+'].hrzone=this.value" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.38rem .5rem;color:var(--tx);font-size:.78rem;outline:none"><option value="">—</option><option'+(b.hrzone==='Z1'?' selected':'')+'>Z1</option><option'+(b.hrzone==='Z2'?' selected':'')+'>Z2</option><option'+(b.hrzone==='Z3'?' selected':'')+'>Z3</option><option'+(b.hrzone==='Z4'?' selected':'')+'>Z4</option><option'+(b.hrzone==='Z5'?' selected':'')+'>Z5</option></select></div>' +
+        '<div><label style="font-size:.6rem;color:var(--tx3);display:block;margin-bottom:.2rem;text-transform:uppercase">'+( LANG==='es'?'Distancia':'Distance')+'</label><input type="text" value="'+(b.distance||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].routine['+bi+'].distance=this.value" placeholder="5km" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.38rem .5rem;color:var(--tx);font-size:.78rem;outline:none"></div>' +
+        '</div>' +
+        // Video link
+        (vidId ? '<div style="margin-top:.3rem;border-radius:6px;overflow:hidden"><iframe width="100%" height="120" src="https://www.youtube.com/embed/'+vidId+'?controls=1&rel=0&modestbranding=1" frameborder="0" allowfullscreen style="display:block"></iframe></div>' : '') +
+        '</div>';
+    });
+
+    routineEditor += '<button onclick="CURRENT_CLIENT.plan['+idx+'].routine.push({type:\'Warm-up\',desc:\'\',duration:\'\',pace:\'\',hrzone:\'\',distance:\'\'});editSession('+idx+')" style="padding:.4rem .9rem;border-radius:7px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;font-size:.78rem">+ '+(LANG==='es'?'Agregar bloque':'Add block')+'</button>';
+
+  } else if(s.t === 'gym') {
+    // CIRCUIT SYSTEM - proper named circuits with grouping
+    var groups = [
+      {label:LANG==='es'?'Piernas':'Legs',key:'legs'},
+      {label:LANG==='es'?'Tren Superior':'Upper Body',key:'upper'},
+      {label:'Core',key:'core'},
+      {label:LANG==='es'?'Movilidad':'Mobility',key:'mobility'}
+    ];
+
+    routineEditor = '<div style="font-weight:700;color:var(--gold);font-size:.88rem;letter-spacing:1px;text-transform:uppercase;margin:1rem 0 .5rem;padding-bottom:.35rem;border-bottom:1px solid var(--bd)">'+(LANG==='es'?'Circuitos y Ejercicios':'Circuits & Exercises')+'</div>' +
+      '<div class="nb blue" style="font-size:.75rem">'+(LANG==='es'?'Agrega circuitos con nombre propio. Cada circuito puede tener su cantidad de rondas, ejercicios y descanso. O agrega ejercicios individuales.':'Add named circuits. Each circuit has its own rounds, exercises and rest periods. Or add individual exercises.')+'</div>';
+
+    // Render circuits
+    if(!s.circuits) s.circuits=[];
+    s.circuits.forEach(function(circ, ci) {
+      routineEditor += '<div style="background:rgba(55,138,221,.06);border:1px solid rgba(55,138,221,.3);border-radius:12px;padding:1rem;margin-bottom:.85rem">' +
+        // Circuit header
+        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.65rem;flex-wrap:wrap">' +
+        '<div style="background:var(--blu);color:#fff;border-radius:5px;padding:.2rem .55rem;font-size:.68rem;font-weight:700;flex-shrink:0">⚡ '+(LANG==='es'?'CIRCUITO':'CIRCUIT')+' '+(ci+1)+'</div>' +
+        '<input type="text" value="'+(circ.name||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].name=this.value" placeholder="'+(LANG==='es'?'Nombre del circuito (ej: Piernas A)':'Circuit name (e.g. Legs A)')+'" style="flex:1;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.35rem .6rem;color:var(--tx);font-size:.82rem;outline:none;min-width:100px">' +
+        '<button onclick="CURRENT_CLIENT.plan['+idx+'].circuits.splice('+ci+',1);editSession('+idx+')" style="background:transparent;border:1px solid var(--red);border-radius:5px;padding:.25rem .45rem;color:var(--red);cursor:pointer;font-size:.72rem;flex-shrink:0">✕</button>' +
+        '</div>' +
+        // Circuit settings row
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem;margin-bottom:.65rem">' +
+        '<div><label style="font-size:.6rem;color:var(--tx3);display:block;margin-bottom:.2rem;text-transform:uppercase">Rondas/Rounds</label><input type="number" value="'+(circ.rounds||3)+'" min="1" max="10" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].rounds=parseInt(this.value)" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.35rem .5rem;color:var(--tx);font-size:.82rem;outline:none;text-align:center"></div>' +
+        '<div><label style="font-size:.6rem;color:var(--tx3);display:block;margin-bottom:.2rem;text-transform:uppercase">'+(LANG==='es'?'Desc entre ejercicios':'Rest between ex.')+'</label><input type="text" value="'+(circ.restBetween||'30s')+'" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].restBetween=this.value" placeholder="30s" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.35rem .5rem;color:var(--tx);font-size:.78rem;outline:none;text-align:center"></div>' +
+        '<div><label style="font-size:.6rem;color:var(--tx3);display:block;margin-bottom:.2rem;text-transform:uppercase">'+(LANG==='es'?'Desc entre rondas':'Rest between rounds')+'</label><input type="text" value="'+(circ.restRounds||'90s')+'" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].restRounds=this.value" placeholder="90s" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.35rem .5rem;color:var(--tx);font-size:.78rem;outline:none;text-align:center"></div>' +
+        '</div>' +
+        // Circuit exercises
+        '<div style="background:var(--sf2);border-radius:8px;padding:.6rem;margin-bottom:.5rem">' +
+        '<div style="display:grid;grid-template-columns:1fr 45px 65px 80px 28px;gap:.35rem;margin-bottom:.3rem"><span style="font-size:.6rem;color:var(--tx3);text-transform:uppercase">'+(LANG==='es'?'Ejercicio':'Exercise')+'</span><span style="font-size:.6rem;color:var(--tx3);text-transform:uppercase;text-align:center">Sets</span><span style="font-size:.6rem;color:var(--tx3);text-transform:uppercase;text-align:center">Reps</span><span style="font-size:.6rem;color:var(--tx3);text-transform:uppercase">'+(LANG==='es'?'Carga':'Load')+'</span><span></span></div>' +
+        (circ.exercises||[]).map(function(ex, ei) {
+          var allEx = [].concat(EXERCISE_LIB.legs,EXERCISE_LIB.upper,EXERCISE_LIB.core,EXERCISE_LIB.mobility);
+          var found = allEx.find(function(e){return e.name===ex.exercise;});
+          return '<div style="margin-bottom:.35rem">' +
+            '<div style="display:grid;grid-template-columns:1fr 45px 65px 80px 28px;gap:.35rem;align-items:center;margin-bottom:.2rem">' +
+            '<select onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].exercises['+ei+'].exercise=this.value;editSession('+idx+')" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:6px;padding:.35rem .4rem;color:var(--tx);font-size:.75rem;outline:none">' +
+            '<option value="">'+(LANG==='es'?'-- Ejercicio --':'-- Exercise --')+'</option>' +
+            groups.map(function(g){return '<optgroup label="'+g.label+'">'+EXERCISE_LIB[g.key].map(function(e){return '<option'+(ex.exercise===e.name?' selected':'')+'>'+e.name+'</option>';}).join('')+'</optgroup>';}).join('') +
+            '</select>' +
+            '<input type="number" value="'+(ex.sets||3)+'" min="1" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].exercises['+ei+'].sets=this.value" style="background:var(--sf3);border:1px solid var(--bd);border-radius:6px;padding:.35rem .3rem;color:var(--tx);font-size:.78rem;outline:none;text-align:center">' +
+            '<input type="text" value="'+(ex.reps||'12')+'" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].exercises['+ei+'].reps=this.value" style="background:var(--sf3);border:1px solid var(--bd);border-radius:6px;padding:.35rem .3rem;color:var(--tx);font-size:.78rem;outline:none;text-align:center">' +
+            '<input type="text" value="'+(ex.load||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].exercises['+ei+'].load=this.value" placeholder="kg" style="background:var(--sf3);border:1px solid var(--bd);border-radius:6px;padding:.35rem .4rem;color:var(--tx);font-size:.75rem;outline:none">' +
+            '<button onclick="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].exercises.splice('+ei+',1);editSession('+idx+')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:.82rem;padding:.2rem">✕</button>' +
+            '</div>' +
+            (found&&found.vid ? '<div style="border-radius:6px;overflow:hidden;margin-left:4px"><iframe width="100%" height="100" src="https://www.youtube.com/embed/'+found.vid+'?controls=1&rel=0&modestbranding=1" frameborder="0" allowfullscreen style="display:block"></iframe></div>' : '') +
+            '</div>';
+        }).join('') +
+        '</div>' +
+        '<button onclick="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].exercises.push({exercise:\'\',sets:3,reps:\'12\',load:\'\'});editSession('+idx+')" style="padding:.3rem .75rem;border-radius:6px;border:1px solid var(--blu);background:transparent;color:var(--blu);cursor:pointer;font-size:.75rem">+ '+(LANG==='es'?'Agregar ejercicio al circuito':'Add exercise to circuit')+'</button>' +
+        // Circuit notes
+        '<div style="margin-top:.5rem"><input type="text" value="'+(circ.notes||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].circuits['+ci+'].notes=this.value" placeholder="'+(LANG==='es'?'Instrucciones del circuito...':'Circuit instructions...')+'" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.38rem .6rem;color:var(--tx);font-size:.78rem;outline:none;margin-top:.4rem"></div>' +
+        '</div>';
+    });
+
+    // Individual exercises (outside circuits)
+    if(s.routine.length > 0) {
+      routineEditor += '<div style="font-weight:600;font-size:.82rem;color:var(--tx2);margin:.65rem 0 .4rem">'+(LANG==='es'?'Ejercicios Individuales:':'Individual Exercises:')+'</div>';
+      s.routine.forEach(function(ex, ei) {
+        var allEx = [].concat(EXERCISE_LIB.legs,EXERCISE_LIB.upper,EXERCISE_LIB.core,EXERCISE_LIB.mobility);
+        var found = allEx.find(function(e){return e.name===ex.exercise;});
+        routineEditor += '<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:10px;padding:.75rem;margin-bottom:.5rem">' +
+          '<div style="display:grid;grid-template-columns:1fr 45px 65px 80px 28px;gap:.35rem;align-items:center;margin-bottom:.35rem">' +
+          '<select onchange="updateExercise('+idx+','+ei+',this.value)" style="width:100%;background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.4rem .5rem;color:var(--tx);font-size:.78rem;outline:none">' +
+          '<option value="">'+(LANG==='es'?'-- Ejercicio --':'-- Exercise --')+'</option>' +
+          groups.map(function(g){return '<optgroup label="'+g.label+'">'+EXERCISE_LIB[g.key].map(function(e){return '<option'+(ex.exercise===e.name?' selected':'')+'>'+e.name+'</option>';}).join('')+'</optgroup>';}).join('') +
+          '</select>' +
+          '<input type="number" value="'+(ex.sets||3)+'" min="1" onchange="CURRENT_CLIENT.plan['+idx+'].routine['+ei+'].sets=this.value" style="background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.38rem .3rem;color:var(--tx);font-size:.78rem;outline:none;text-align:center">' +
+          '<input type="text" value="'+(ex.reps||'12')+'" onchange="CURRENT_CLIENT.plan['+idx+'].routine['+ei+'].reps=this.value" style="background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.38rem .3rem;color:var(--tx);font-size:.78rem;outline:none;text-align:center">' +
+          '<input type="text" value="'+(ex.load||'')+'" onchange="CURRENT_CLIENT.plan['+idx+'].routine['+ei+'].load=this.value" placeholder="kg" style="background:var(--sf3);border:1px solid var(--bd);border-radius:7px;padding:.38rem .4rem;color:var(--tx);font-size:.75rem;outline:none">' +
+          '<button onclick="CURRENT_CLIENT.plan['+idx+'].routine.splice('+ei+',1);editSession('+idx+')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:.85rem">✕</button>' +
+          '</div>' +
+          (found&&found.vid ? '<iframe width="100%" height="110" src="https://www.youtube.com/embed/'+found.vid+'?controls=1&rel=0&modestbranding=1" frameborder="0" allowfullscreen style="border-radius:6px;display:block"></iframe>' : '') +
+          '</div>';
+      });
+    }
+
+    // Add buttons
+    routineEditor += '<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.35rem">' +
+      '<button onclick="if(!CURRENT_CLIENT.plan['+idx+'].circuits)CURRENT_CLIENT.plan['+idx+'].circuits=[];CURRENT_CLIENT.plan['+idx+'].circuits.push({name:\'\',rounds:3,restBetween:\'30s\',restRounds:\'90s\',exercises:[],notes:\'\'});editSession('+idx+')" style="padding:.4rem .9rem;border-radius:7px;border:1px solid var(--blu);background:rgba(55,138,221,.08);color:var(--blu);cursor:pointer;font-size:.78rem;font-weight:600">⚡ '+(LANG==='es'?'Agregar Circuito':'Add Circuit')+'</button>' +
+      '<button onclick="CURRENT_CLIENT.plan['+idx+'].routine.push({exercise:\'\',sets:3,reps:\'12\',load:\'\'});editSession('+idx+')" style="padding:.4rem .9rem;border-radius:7px;border:1px solid var(--gold);background:rgba(201,168,76,.08);color:var(--gold);cursor:pointer;font-size:.78rem">+ '+(LANG==='es'?'Ejercicio Individual':'Individual Exercise')+'</button>' +
+      '</div>';
+  }
+
+  h('client-detail',
+    '<button class="btn s sm" style="margin-bottom:.85rem" onclick="CLIENT_TAB=\'plan\';rClientDetail()">← '+t('trainingplan')+'</button>'+
+    '<div class="ph"><h2>'+(LANG==='es'?'EDITAR SESION':'EDIT SESSION')+'</h2><p>'+c.name+' · '+s.d+'</p></div>'+
+    '<div class="card">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">'+
+    '<div class="fld"><label>'+(LANG==='es'?'Titulo':'Title')+'</label><input type="text" id="es-t" value="'+s.title+'"></div>'+
+    '<div class="fld"><label>'+(LANG==='es'?'Tipo':'Type')+'</label><select id="es-tp"><option value="run"'+(s.t==='run'?' selected':'')+'>'+(LANG==='es'?'Correr':'Run')+'</option><option value="gym"'+(s.t==='gym'?' selected':'')+'>Gym</option><option value="rest"'+(s.t==='rest'?' selected':'')+'>'+(LANG==='es'?'Descanso':'Rest')+'</option></select></div>'+
+    '</div>'+
+    '<div class="fld"><label>'+(LANG==='es'?'Descripcion general':'General description')+'</label><input type="text" id="es-d" value="'+s.det+'"></div>'+
+    '<div class="fld"><label>'+(LANG==='es'?'Nota para el cliente':'Client note')+'</label><input type="text" id="es-n" value="'+s.note+'" placeholder="'+(LANG==='es'?'Opcional...':'Optional...')+'"></div>'+
+    routineEditor+
+    '<div style="display:flex;gap:.5rem;margin-top:1rem"><button class="btn p sm" onclick="saveSession('+idx+')">'+t('savechanges')+'</button><button class="btn s sm" onclick="CLIENT_TAB=\'plan\';rClientDetail()">'+(LANG==='es'?'Cancelar':'Cancel')+'</button></div>'+
+    '</div>');
+}
+
+
+
+function updateExercise(planIdx, routineIdx, exerciseName) {
+  CURRENT_CLIENT.plan[planIdx].routine[routineIdx].exercise = exerciseName;
+  editSession(planIdx);
+}
+
+
+function saveSession(idx) {
+  var c = CURRENT_CLIENT;
+  c.plan[idx].title = document.getElementById('es-t').value;
+  c.plan[idx].t = document.getElementById('es-tp').value;
+  c.plan[idx].det = document.getElementById('es-d').value;
+  c.plan[idx].note = document.getElementById('es-n').value;
+  CLIENT_TAB = 'plan'; toast('ok'); rClientDetail();
+}
+
+function toggleAcc(dtype, role) {
+  if(!CURRENT_CLIENT||role==='admin') return;
+  if(!CURRENT_CLIENT.access) CURRENT_CLIENT.access={};
+  if(!CURRENT_CLIENT.access[dtype]) CURRENT_CLIENT.access[dtype]=['admin'];
+  var arr=CURRENT_CLIENT.access[dtype]; var idx=arr.indexOf(role);
+  if(idx>=0) arr.splice(idx,1); else arr.push(role);
+  rClientDetail();
+}
+
+function rIntake() {
+  h('intake', '<div class="ph"><h2>'+(LANG==='es'?'NUEVO CLIENTE':'NEW CLIENT')+'</h2></div>' +
+    '<div class="card">' +
+    '<div class="stitle">'+(LANG==='es'?'Informacion Personal':'Personal Information')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Nombre Completo':'Full Name')+'</label><input type="text" id="nc-name"></div><div class="fld"><label>Email</label><input type="email" id="nc-email"></div></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Salud':'Health')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Altura (cm)':'Height (cm)')+'</label><input type="number"></div><div class="fld"><label>'+(LANG==='es'?'Peso (kg)':'Weight (kg)')+'</label><input type="number"></div></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Condiciones Medicas':'Medical Conditions')+'</label><textarea style="min-height:50px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.5rem .7rem;color:var(--tx);font-size:.85rem;outline:none;width:100%;resize:vertical"></textarea></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Lesiones':'Injuries')+'</label><input type="text"></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Metas y Plan':'Goals and Service')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Meta Principal':'Primary Goal')+'</label><select><option>'+(LANG==='es'?'Correr primera maraton':'Run first marathon')+'</option><option>'+(LANG==='es'?'Mejorar 10K':'Improve 10K')+'</option></select></div><div class="fld"><label>'+(LANG==='es'?'Plan':'Plan')+'</label><select><option>'+(LANG==='es'?'Digital':'Digital')+'</option><option>'+(LANG==='es'?'Estandar':'Standard')+'</option><option>Premium</option></select></div></div>' +
+    '<div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-top:.5rem">' +
+    '<button class="btn p" onclick="saveIntake()">'+(LANG==='es'?'Guardar Cliente':'Save Client')+'</button>' +
+    '</div></div>');
+}
+
+function saveIntake() {
+  var name=document.getElementById('nc-name').value.trim();
+  var email=document.getElementById('nc-email').value.trim();
+  if(!name){ toast(LANG==='es'?'Ingresa un nombre':'Please enter a name'); return; }
+  CLIENTS.push({id:CLIENTS.length+1,name:name,ini:ini(name),email:email||'',goal:'Run first marathon',level:'Beginner',tier:'digital',km:0,sessions:0,mood:0,sleep:0,streak:0,injuries:'None',target:'',diet:'Omnivore',plan:[{d:'Mon',t:'run',title:'Easy Run 5km',det:'Z2 30min',note:'Welcome!'},{d:'Tue',t:'rest',title:'Rest',det:'Complete rest',note:''},{d:'Wed',t:'run',title:'Easy Run 4km',det:'Z2 25min',note:''},{d:'Thu',t:'gym',title:'Strength',det:'Light weights 45min',note:''},{d:'Fri',t:'run',title:'Easy Run 3km',det:'Z2 20min',note:''},{d:'Sat',t:'rest',title:'Rest',det:'Rest',note:''},{d:'Sun',t:'run',title:'Long Run 6km',det:'Z2 35min',note:''}]});
+  toast(LANG==='es'?'Cliente guardado':'Client saved'); goTo('clients');
+}
+
+function rAccess() {
+  h('access', '<div class="ph"><h2>'+t('access').toUpperCase()+'</h2></div>' +
+    '<div class="nb gold">'+(LANG==='es'?'Selecciona un cliente para configurar el acceso a sus datos.':'Select a client to configure data access.')+'</div>' +
+    '<div class="card" style="padding:0;overflow:hidden">' +
+    CLIENTS.map(function(c){ return '<div class="client-row" onclick="CURRENT_CLIENT=CLIENTS.find(function(x){return x.id==='+c.id+'});CLIENT_TAB=\'access\';goTo(\'client-detail\')"><div class="cav">'+c.ini+'</div><div class="ci"><div class="cn">'+c.name+'</div><div class="cm">'+(LANG==='es'?'Toca para configurar':'Click to configure')+'</div></div><span class="tier-pill '+tclass(c.tier)+'">'+tlabel(c.tier)+'</span></div>'; }).join('') +
+    '</div>');
+}
+
+
+
+
+
+function createUserAction(){toast(LANG==='es'?'Usuario creado. Invitacion enviada.':'User created. Invitation sent.');goBackToUsers();}
+function toggleChip(el){el.classList.toggle('on');}
+function goBackToUsers(){window._adminTab='users';rAdmin();}
+function showCreateUser() {
+  var el = document.getElementById('page-admin');
+  el.innerHTML = '<button class="btn s sm" style="margin-bottom:.85rem" onclick="goBackToUsers()">'+(LANG==='es'?'← Volver':'← Back')+'</button>' +
+    '<div class="ph"><h2>'+(LANG==='es'?'CREAR USUARIO':'CREATE USER')+'</h2></div>' +
+    '<div class="card">' +
+    '<div class="fld"><label>'+(LANG==='es'?'Nombre Completo':'Full Name')+'</label><input type="text" id="nu-name" placeholder="'+(LANG==='es'?'Nombre del usuario':'User name')+'"></div>' +
+    '<div class="fld"><label>Email</label><input type="email" id="nu-email" placeholder="user@email.com"></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Rol Principal':'Primary Role')+'</label>' +
+    '<select id="nu-role">' +
+    '<option value="client">'+(LANG==='es'?'Cliente / Atleta':'Client / Athlete')+'</option>' +
+    '<option value="coach">Coach</option>' +
+    '<option value="admin">'+(LANG==='es'?'Administrador/a':'Administrator')+'</option>' +
+    '</select></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Permisos Adicionales':'Additional Permissions')+'</label>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.35rem">' +
+    ['admin','coach','client','nutritionist'].map(function(p){
+      var labels = {admin:LANG==='es'?'Admin':'Admin',coach:'Coach',client:LANG==='es'?'Cliente':'Client',nutritionist:LANG==='es'?'Nutricionista':'Nutritionist'};
+      return '<button class="acc-chip" id="perm-'+p+'" onclick="toggleChip(this)">'+labels[p]+'</button>';
+    }).join('') +
+    '</div></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Especializaciones (si es coach)':'Specializations (if coach)')+'</label>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.35rem">' +
+    SPECIALIZATIONS.map(function(s){return '<button class="acc-chip" onclick="toggleChip(this)">'+s+'</button>';}).join('') +
+    '</div></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Biografia':'Biography')+'</label>' +
+    '<textarea id="nu-bio" style="min-height:70px;width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.6rem .85rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical"></textarea></div>' +
+    '<button class="btn p" onclick="createUserAction()">'+(LANG==='es'?'Crear y Enviar Invitacion':'Create & Send Invitation')+'</button>' +
+    '</div>';
+}
+
+function editUser(id) {
+  toast(LANG==='es'?'Editor de usuario completo — proxima fase':'Full user editor — coming next phase');
+}
+
+function rAdmin() {
+  if(!hasPermission('admin')){h('admin','<div class="nb red">'+(LANG=='es'?'No tenes permisos de administrador':'You do not have admin permissions')+'</div>');return;}
+  var page = document.getElementById('page-admin');
+  var adminTab = window._adminTab || 'overview';
+  var tabs = ['overview','users','courses','plans'];
+  var tabLabels_en = ['Overview','Users & Roles','Courses','Plans'];
+  var tabLabels_es = ['General','Usuarios y Roles','Cursos','Planes'];
+  var tabLabels = LANG==='es'?tabLabels_es:tabLabels_en;
+
+  var tabHtml = '<div class="tabs" style="margin-bottom:1.25rem">' +
+    tabs.map(function(tb,i){return '<button class="tab'+(adminTab===tb?' active':'')+'" onclick="window._adminTab=\''+tb+'\';rAdmin()">'+tabLabels[i]+'</button>';}).join('') +
+    '</div>';
+
+  var body = '';
+
+  if(adminTab==='overview'){
+    body = '<div class="g4" style="gap:.65rem;margin-bottom:1.25rem">' +
+    '<div class="stat"><label>'+t('clients')+'</label><div class="v gold">'+CLIENTS.length+'</div></div>' +
+    '<div class="stat"><label>Coaches</label><div class="v grn">'+COACHES.length+'</div></div>' +
+    '<div class="stat"><label>'+(LANG==='es'?'Cursos':'Courses')+'</label><div class="v">'+COURSES_DATA.length+'</div></div>' +
+    '<div class="stat"><label>MRR</label><div class="v gold">$1,840</div></div>' +
+    '</div>' +
+    '<div class="nb gold">'+(LANG==='es'?LANG==='es'?'Bienvenido/a. Sos administrador/a de la plataforma.':'Welcome. You are the platform administrator.':LANG==='es'?'Bienvenido/a. Sos administrador/a de la plataforma.':'Welcome. You are the platform administrator.')+'</div>' +
+    '<div class="g2" style="gap:1rem">' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.75rem">'+(LANG==='es'?'Acciones Rapidas':'Quick Actions')+'</div>' +
+    '<button class="btn p" style="width:100%;margin-bottom:.5rem" onclick="goTo(\'intake\')">'+t('newclient')+'</button>' +
+    '<button class="btn s" style="width:100%;margin-bottom:.5rem" onclick="window._adminTab=\'coaches\';rAdmin()">'+(LANG==='es'?'Gestionar Coaches':'Manage Coaches')+'</button>' +
+    '<button class="btn s" style="width:100%;margin-bottom:.5rem" onclick="window._adminTab=\'courses\';rAdmin()">'+(LANG==='es'?'Editar Cursos':'Edit Courses')+'</button>' +
+    '<button class="btn s" style="width:100%" onclick="window._adminTab=\'plans\';rAdmin()">'+(LANG==='es'?'Editar Precios':'Edit Prices')+'</button>' +
+    '</div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.75rem">'+(LANG==='es'?'Tu Perfil de Coach':'Your Coach Profile')+'</div>' +
+    '<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem">' +
+    '<div style="width:44px;height:44px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:#0C0C0F">LM</div>' +
+    '<div><div style="font-weight:600">'+getDisplayName()+'</div>' +
+    '<div style="font-size:.75rem;color:var(--gold)">'+COACHES[0].specializations.join(' · ')+'</div></div></div>' +
+    '<div style="font-size:.82rem;color:var(--tx2);line-height:1.7;margin-bottom:.5rem">'+COACHES[0].bio+'</div>' +
+    '<div style="font-size:.75rem;color:var(--tx3)">📋 '+COACHES[0].certifications+'</div>' +
+    '</div></div>';
+
+  } else if(adminTab==='users'){
+    body = '<div class="nb blue">'+(LANG==='es'?'Gestion de usuarios y roles. El admin puede crear, editar y asignar permisos a cualquier usuario.':'User and role management. Admin can create, edit and assign permissions to any user.')+'</div>';
+    body += '<div style="display:flex;justify-content:flex-end;margin-bottom:.85rem">';
+    body += '<button class="btn p sm" onclick="showCreateUser()">'+(LANG==='es'?'+ Crear Usuario':'+ Create User')+'</button></div>';
+
+    // Show all users (coaches + demo)
+    var allUsers = [
+      {id:1,name:(LANG==='es'?'[Nombre del Admin]':'[Admin Name]'),ini:'A',email:'admin@',role:'admin',permissions:['admin'],specs:[],active:true},
+      {id:2,name:(LANG==='es'?'[Nombre del Coach]':'[Coach Name]'),ini:'C',email:'coach@',role:'coach',permissions:['coach'],specs:['Running Coach','Strength Coach'],active:true}
+    ];
+
+    var permLabels = {
+      admin: LANG==='es'?'Administrador':'Admin',
+      coach: 'Coach',
+      client: LANG==='es'?'Cliente':'Client',
+      nutritionist: LANG==='es'?'Nutricionista':'Nutritionist'
+    };
+
+    allUsers.forEach(function(u){
+      body += '<div class="card" style="margin-bottom:.65rem">' +
+        '<div style="display:flex;align-items:center;gap:.85rem">' +
+        '<div style="width:38px;height:38px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;color:#0C0C0F;flex-shrink:0">'+u.ini+'</div>' +
+        '<div style="flex:1">' +
+        '<div style="font-weight:600">'+u.name+'</div>' +
+        '<div style="font-size:.75rem;color:var(--tx2)">'+u.email+'</div>' +
+        '<div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-top:.3rem">' +
+        u.permissions.map(function(p){return '<span style="background:rgba(201,168,76,.1);border:1px solid rgba(201,168,76,.3);color:var(--gold);font-size:.65rem;padding:.12rem .45rem;border-radius:20px">'+(permLabels[p]||p)+'</span>';}).join('') +
+        (u.specs.length ? u.specs.map(function(s){return '<span style="background:var(--sf2);border:1px solid var(--bd);color:var(--tx3);font-size:.65rem;padding:.12rem .45rem;border-radius:20px">'+s+'</span>';}).join('') : '') +
+        '</div></div>' +
+        '<button onclick="editUser('+u.id+')" style="background:transparent;border:1px solid var(--bd);border-radius:6px;padding:.3rem .6rem;color:var(--tx3);font-size:.72rem;cursor:pointer">✏️</button>' +
+        '</div></div>';
+    });
+
+    } else if(adminTab==='courses'){
+    body = '<div class="nb blue" style="font-size:.78rem">'+(LANG==='es'?'Haz clic en un curso para editar su contenido, lecciones y precios.':'Click a course to edit its content, lessons and pricing.')+'</div>';
+    body += '<div style="display:flex;justify-content:flex-end;margin-bottom:.85rem"><button class="btn p sm" onclick="createCourse()">'+(LANG==='es'?'+ Nuevo Curso':'+ New Course')+'</button></div>';
+
+    COURSES_DATA.forEach(function(c,ci){
+      body += '<div class="card" style="margin-bottom:.75rem">' +
+      '<div style="display:flex;align-items:center;gap:.75rem">' +
+      '<div style="font-size:2rem">'+c.emoji+'</div>' +
+      '<div style="flex:1">' +
+      '<div style="font-weight:600">'+c.title+'</div>' +
+      '<div style="font-size:.75rem;color:var(--tx2);margin-top:.15rem">'+c.lessons.length+' '+(LANG==='es'?'lecciones':'lessons')+' · USD '+c.price+'</div>' +
+      '</div>' +
+      '<button class="btn p sm" onclick="editCourse('+ci+')">'+(LANG==='es'?'Editar':'Edit')+'</button>' +
+      '</div></div>';
+    });
+
+  } else if(adminTab==='plans'){
+    body = '<div class="nb gold">'+(LANG==='es'?'Edita los precios directamente. Los cambios se guardan al tocar el boton.':'Edit prices directly. Changes save when you tap the button.')+'</div>';
+    ['digital','standard','premium'].forEach(function(p){
+      body += '<div class="card" style="margin-bottom:.75rem">' +
+      '<div style="font-weight:600;margin-bottom:.25rem">'+t('plan_'+p[0])+'</div>' +
+      '<div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;margin-top:.5rem">' +
+      '<div style="display:flex;align-items:center;gap:.5rem"><span style="font-size:.75rem;color:var(--tx3)">USD</span><input type="number" value="'+PLANS[p].pm+'" onchange="PLANS[\''+p+'\'].pm=parseInt(this.value)" style="width:80px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .65rem;color:var(--tx);font-size:.88rem;outline:none"><span style="font-size:.75rem;color:var(--tx3)">'+t('monthly')+'</span></div>' +
+      '<div style="display:flex;align-items:center;gap:.5rem"><span style="font-size:.75rem;color:var(--tx3)">USD</span><input type="number" value="'+PLANS[p].pa+'" onchange="PLANS[\''+p+'\'].pa=parseInt(this.value)" style="width:80px;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;padding:.45rem .65rem;color:var(--tx);font-size:.88rem;outline:none"><span style="font-size:.75rem;color:var(--tx3)">'+t('annual')+'</span></div>' +
+      '</div></div>';
+    });
+    body += '<button class="btn p sm" style="margin-top:.5rem" onclick="toast(\'ok\')">'+t('saveprices')+'</button>';
+  }
+
+  var el = document.getElementById('page-admin');
+  if(el) el.innerHTML = '<div class="ph"><h2>'+t('admin').toUpperCase()+'</h2></div>' + tabHtml + body;
+}
+
+function showAddCoach(){
+  toast(LANG==='es'?'Invitacion enviada al nuevo coach':'Invitation sent to new coach');
+}
+
+function editCoach(id){
+  var coach = COACHES.find(function(c){return c.id===id;});
+  if(!coach) return;
+  var el = document.getElementById('page-admin');
+  el.innerHTML = '<button class="btn s sm" style="margin-bottom:.85rem" onclick="window._adminTab=\'coaches\';rAdmin()">'+(LANG==='es'?'← Volver':'← Back')+'</button>' +
+    '<div class="ph"><h2>'+(LANG==='es'?'EDITAR COACH':'EDIT COACH')+'</h2></div>' +
+    '<div class="card">' +
+    '<div class="fld"><label>'+(LANG==='es'?'Nombre Completo':'Full Name')+'</label><input type="text" value="'+coach.name+'" onchange="COACHES.find(c=>c.id==='+id+').name=this.value"></div>' +
+    '<div class="fld"><label>Email</label><input type="email" value="'+coach.email+'"></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Biografia':'Biography')+'</label><textarea style="min-height:80px;width:100%;background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:.6rem .85rem;color:var(--tx);font-size:.85rem;outline:none;resize:vertical" onchange="COACHES.find(c=>c.id==='+id+').bio=this.value">'+coach.bio+'</textarea></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Certificaciones':'Certifications')+'</label><input type="text" value="'+coach.certifications+'" onchange="COACHES.find(c=>c.id==='+id+').certifications=this.value"></div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Especializaciones (selecciona todas las que aplican)':'Specializations (select all that apply)')+'</label>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem">' +
+    SPECIALIZATIONS.map(function(s){var isOn=coach.specializations.indexOf(s)>=0; return '<button class="acc-chip'+(isOn?' on':'')+'" onclick="toggleCoachSpec('+id+',\''+s+'\',this)">'+s+'</button>';}).join('') +
+    '</div></div>' +
+    '<button class="btn p sm" onclick="toast(\'ok\');window._adminTab=\'coaches\';rAdmin()">'+(LANG==='es'?'Guardar Coach':'Save Coach')+'</button>' +
+    '</div>';
+}
+
+function toggleCoachSpec(coachId, spec, btn){
+  var coach = COACHES.find(function(c){return c.id===coachId;});
+  if(!coach) return;
+  var idx = coach.specializations.indexOf(spec);
+  if(idx>=0){ coach.specializations.splice(idx,1); btn.className='acc-chip'; }
+  else { coach.specializations.push(spec); btn.className='acc-chip on'; }
+}
+
+
+function rProfile() {
+  h('profile', '<div class="ph"><h2>'+t('profile').toUpperCase()+'</h2></div>' +
+    '<div class="nb gold">'+(LANG==='es'?'Tu coach configuro tu perfil. Por favor revisa y confirma que todo esta correcto.':'Your coach set up your profile. Please review and confirm everything is correct.')+'</div>' +
+    '<div class="card"><div class="stitle">'+(LANG==='es'?'Informacion Personal':'Personal Info')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Nombre':'Name')+'</label><input type="text" value="'+(PROFILE.full_name||PROFILE.name||'')+'"></div><div class="fld"><label>Email</label><input type="email" value="'+(PROFILE.email||'')+'"></div></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Salud y Carrera':'Health and Running')+'</div>' +
+    '<div class="g2"><div class="fld"><label>'+(LANG==='es'?'Altura (cm)':'Height (cm)')+'</label><input type="number" placeholder="165"></div><div class="fld"><label>'+(LANG==='es'?'Peso (kg)':'Weight (kg)')+'</label><input type="number" placeholder="62"></div></div>' +
+    '<div class="g2"><div class="fld"><label>FC '+(LANG==='es'?'Reposo':'Resting')+'</label><input type="number" id="rhr" placeholder="58" onchange="calcZones()"></div><div class="fld"><label>FC '+(LANG==='es'?'Maxima':'Max')+'</label><input type="number" id="mhr" placeholder="185" onchange="calcZones()"></div></div>' +
+    '<div id="zones-display"></div>' +
+    '<div class="stitle">'+(LANG==='es'?'Mis Metas':'My Goals')+'</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.85rem">' +
+    (LANG==='es'?['Primera 5K','Primera 10K','Mejorar 10K','Primera media maraton','Sub 2h media','Primera maraton','Mejorar maraton','Ultra maraton','Trail running','Mejorar velocidad','Retorno tras lesion','Perdida de peso']:['First 5K','First 10K','Improve 10K','First half marathon','Sub 2h half','First marathon','Improve marathon','Ultra marathon','Trail running','Improve speed','Return after injury','Weight loss']).map(function(g){ return '<button class="acc-chip" onclick="this.classList.toggle(\'on\')">'+g+'</button>'; }).join('') +
+    '</div>' +
+    '<button class="btn p" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar Perfil':'Save Profile')+'</button></div>');
+}
+
+function calcZones() {
+  var rhr = parseInt(document.getElementById('rhr').value);
+  var mhr = parseInt(document.getElementById('mhr').value);
+  var d = document.getElementById('zones-display');
+  if(rhr && mhr && d) {
+    var z1=Math.round(rhr+(mhr-rhr)*.5), z2=Math.round(rhr+(mhr-rhr)*.6), z3=Math.round(rhr+(mhr-rhr)*.7), z4=Math.round(rhr+(mhr-rhr)*.8), z5=Math.round(rhr+(mhr-rhr)*.9);
+    d.innerHTML = '<div class="nb blue" style="font-size:.75rem"><strong>'+(LANG==='es'?'Zonas de FC:':'HR Zones:')+'</strong> Z1: '+z1+' - Z2: '+z2+' - Z3: '+z3+' - Z4: '+z4+' - Z5: '+z5+' bpm</div>';
+  }
+}
+
+function rSettings() {
+  h('settings', '<div class="ph"><h2>'+t('settings').toUpperCase()+'</h2></div>' +
+    '<div class="g2" style="gap:1rem"><div class="card"><div style="font-weight:600;margin-bottom:.9rem">'+(LANG==='es'?'Cuenta':'Account')+'</div>' +
+    '<div class="fld"><label>'+(LANG==='es'?'Nombre':'Name')+'</label><input type="text" value="'+(PROFILE.full_name||PROFILE.name||'')+'"></div>' +
+    '<div class="fld"><label>Email</label><input type="email" value="'+(PROFILE.email||'')+'"></div>' +
+    '<button class="btn p sm" onclick="toast(\'ok\')">'+(LANG==='es'?'Guardar':'Save')+'</button>' +
+    '<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--bd)"><button class="btn d sm" onclick="doLogout()">'+(LANG==='es'?'Cerrar Sesion':'Sign Out')+'</button></div></div>' +
+    '<div class="card"><div style="font-weight:600;margin-bottom:.5rem;color:var(--gold)">'+(LANG==='es'?'Prueba Gratuita Activa':'Free Trial Active')+'</div>' +
+    '<div style="font-size:.82rem;color:var(--tx2);margin-bottom:.85rem">'+(LANG==='es'?'Tu mes gratis termina en 30 dias. Elige un plan para continuar:':'Your free month ends in 30 days. Choose a plan to continue:')+'</div>' +
+    ['digital','standard','premium'].map(function(p){ return '<button onclick="toast(\'ok\')" style="width:100%;padding:.55rem;background:var(--sf2);border:1px solid var(--bd);border-radius:7px;color:var(--tx2);font-size:.8rem;cursor:pointer;text-align:left;margin-bottom:.35rem">'+t('plan_'+p[0])+' — USD '+PLANS[p].pm+t('monthly')+'</button>'; }).join('') +
+    '</div></div>');
+}
+
+// ── PDF EXPORT ────────────────────────────────────────────────────────────
+
+function qrUrl(text) {
+  return 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' + encodeURIComponent(text);
+}
+
+function ytUrl(vid) {
+  return 'https://www.youtube.com/watch?v=' + vid;
+}
+
+function buildPDFStyles() {
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body { font-family: 'DM Sans', Arial, sans-serif; color: #1a1a1a; background: #fff; padding: 32px; }
+      .pdf-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:28px; padding-bottom:16px; border-bottom:3px solid #C9A84C; }
+      .pdf-logo { font-size:1.8rem; font-weight:900; letter-spacing:3px; color:#C9A84C; }
+      .pdf-meta { font-size:.78rem; color:#888; text-align:right; }
+      .pdf-title { font-size:1.5rem; font-weight:900; letter-spacing:1px; margin-bottom:6px; color:#0C0C0F; }
+      .pdf-sub { font-size:.88rem; color:#555; margin-bottom:24px; }
+      .day-block { margin-bottom:20px; break-inside:avoid; }
+      .day-header { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+      .day-label { background:#C9A84C; color:#0C0C0F; font-weight:700; font-size:.72rem; padding:.3rem .75rem; border-radius:20px; letter-spacing:1px; text-transform:uppercase; }
+      .day-type { font-size:.72rem; color:#888; border:1px solid #ddd; padding:.25rem .6rem; border-radius:20px; }
+      .session-card { border:1px solid #e8e8e8; border-radius:10px; padding:14px 16px; background:#fafafa; }
+      .session-title { font-size:1rem; font-weight:700; margin-bottom:4px; }
+      .session-det { font-size:.82rem; color:#555; margin-bottom:10px; }
+      .session-note { font-size:.78rem; color:#C9A84C; margin-bottom:10px; padding:.4rem .75rem; background:#fffbf0; border-left:3px solid #C9A84C; border-radius:0 6px 6px 0; }
+      .routine-title { font-size:.68rem; font-weight:700; color:#C9A84C; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:8px; padding-bottom:4px; border-bottom:1px solid #eee; }
+      .block-row { display:flex; align-items:flex-start; gap:12px; padding:8px 0; border-bottom:1px solid #f0f0f0; }
+      .block-row:last-child { border-bottom:none; }
+      .block-tag { background:#f0f0f0; border-radius:5px; padding:.2rem .55rem; font-size:.65rem; font-weight:600; color:#555; flex-shrink:0; white-space:nowrap; margin-top:2px; }
+      .block-desc { flex:1; font-size:.82rem; color:#333; line-height:1.5; }
+      .block-dur { font-size:.75rem; color:#C9A84C; font-weight:600; flex-shrink:0; margin-top:2px; }
+      .ex-row { display:grid; grid-template-columns:1fr 50px 70px 90px; gap:8px; padding:7px 0; border-bottom:1px solid #f0f0f0; align-items:start; }
+      .ex-row:last-child { border-bottom:none; }
+      .ex-name { font-size:.85rem; font-weight:500; }
+      .ex-sets { font-size:.82rem; color:#555; text-align:center; }
+      .ex-reps { font-size:.82rem; color:#555; text-align:center; }
+      .ex-load { font-size:.78rem; color:#888; }
+      .video-section { margin-top:10px; padding-top:10px; border-top:1px dashed #ddd; }
+      .video-link-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+      .video-label { font-size:.7rem; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:.5px; min-width:80px; }
+      .video-url { font-size:.72rem; color:#1a73e8; text-decoration:none; flex:1; word-break:break-all; }
+      .qr-code { width:60px; height:60px; flex-shrink:0; }
+      .circuit-badge { background:#e8f4fd; border:1px solid #b3d9f7; color:#1a73e8; font-size:.65rem; padding:.15rem .45rem; border-radius:4px; margin-bottom:4px; display:inline-block; }
+      .rest-day { text-align:center; padding:14px; color:#aaa; font-size:.88rem; font-style:italic; border:1px dashed #ddd; border-radius:10px; }
+      .footer { margin-top:32px; padding-top:16px; border-top:1px solid #eee; display:flex; justify-content:space-between; align-items:center; }
+      .footer-logo { font-size:.88rem; font-weight:700; color:#C9A84C; letter-spacing:2px; }
+      .footer-note { font-size:.68rem; color:#aaa; }
+      .page-break { page-break-before:always; }
+      @media print {
+        body { padding:16px; }
+        .page-break { page-break-before:always; }
+      }
+    </style>
+  `;
+}
+
+function exportTrainingPDF(clientObj) {
+  var c = clientObj || CLIENTS[0];
+  if(!c) { toast(LANG==='es'?'No hay cliente seleccionado':'No client selected'); return; }
+
+  var days_en = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  var days_es = ['Lunes','Martes','Miercoles','Jueves','Viernes','Sabado','Domingo'];
+  var days = LANG==='es' ? days_es : days_en;
+
+  var planRows = c.plan.map(function(s, i) {
+    if(s.t === 'rest') {
+      return '<div class="day-block"><div class="day-header"><span class="day-label">' + days[i] + '</span><span class="day-type">' + (LANG==='es'?'Descanso':'Rest') + '</span></div><div class="rest-day">😴 ' + s.title + '</div></div>';
+    }
+
+    var routineHtml = '';
+    var videoSection = '';
+    var videos = [];
+
+    if(s.routine && s.routine.length > 0) {
+      if(s.t === 'run') {
+        routineHtml = '<div class="routine-title">' + (LANG==='es'?'Rutina de Carrera':'Running Routine') + '</div>';
+        s.routine.forEach(function(blk) {
+          routineHtml += '<div class="block-row"><span class="block-tag">' + blk.type + '</span><span class="block-desc">' + (blk.desc||'') + '</span><span class="block-dur">' + (blk.duration||'') + '</span></div>';
+          // Find video for this drill type
+          var drill = RUNNING_DRILLS.find(function(d){ return d.name===blk.type || blk.type.indexOf(d.name)>=0; });
+          if(drill && drill.vid) {
+            videos.push({label: blk.type, url: ytUrl(drill.vid), qr: qrUrl(ytUrl(drill.vid)), tip: drill.tip});
+          }
+        });
+      } else if(s.t === 'gym') {
+        routineHtml = '<div class="routine-title">' + (LANG==='es'?'Ejercicios':'Exercises') + '</div>';
+        routineHtml += '<div class="ex-row" style="font-size:.65rem;font-weight:700;color:#999;text-transform:uppercase"><span>' + (LANG==='es'?'Ejercicio':'Exercise') + '</span><span style="text-align:center">Sets</span><span style="text-align:center">Reps</span><span>' + (LANG==='es'?'Carga':'Load') + '</span></div>';
+        s.routine.forEach(function(ex) {
+          if(ex.grouped) routineHtml += '<div class="circuit-badge">⚡ Circuit</div>';
+          routineHtml += '<div class="ex-row"><span class="ex-name">' + (ex.exercise||'') + '</span><span class="ex-sets">' + (ex.sets||'') + '</span><span class="ex-reps">' + (ex.reps||'') + '</span><span class="ex-load">' + (ex.load||'') + (ex.rest?' · '+ex.rest:'') + '</span></div>';
+          // Find video for this exercise
+          var allEx = [].concat(EXERCISE_LIB.legs, EXERCISE_LIB.upper, EXERCISE_LIB.core, EXERCISE_LIB.mobility);
+          var found = allEx.find(function(e){ return e.name===ex.exercise; });
+          if(found && found.vid && !videos.find(function(v){return v.label===ex.exercise;})) {
+            videos.push({label: ex.exercise, url: ytUrl(found.vid), qr: qrUrl(ytUrl(found.vid)), tip: found.tip});
+          }
+        });
+      }
+    }
+
+    // Build video section with QR codes
+    if(videos.length > 0) {
+      videoSection = '<div class="video-section"><div style="font-size:.65rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">📹 ' + (LANG==='es'?'Videos de Tecnica':'Technique Videos') + '</div>';
+      videos.forEach(function(v) {
+        videoSection += '<div class="video-link-row"><span class="video-label">' + v.label + '</span><a href="' + v.url + '" class="video-url">' + v.url + '</a><img class="qr-code" src="' + v.qr + '" alt="QR"></div>';
+        if(v.tip) videoSection += '<div style="font-size:.68rem;color:#888;margin-bottom:4px;margin-left:90px;font-style:italic">💡 ' + v.tip + '</div>';
+      });
+      videoSection += '</div>';
+    }
+
+    return '<div class="day-block"><div class="day-header"><span class="day-label">' + days[i] + '</span><span class="day-type">' + s.title + '</span></div>' +
+      '<div class="session-card"><div class="session-title">' + s.title + '</div>' +
+      '<div class="session-det">' + s.det + '</div>' +
+      (s.note ? '<div class="session-note">💬 ' + s.note + '</div>' : '') +
+      routineHtml + videoSection +
+      '</div></div>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Training Plan - ' + c.name + '</title>' + buildPDFStyles() + '</head><body>' +
+    '<div class="pdf-header"><div class="pdf-logo">FinisherFlow</div><div class="pdf-meta"><div style="font-weight:600">' + c.name + '</div><div>' + (LANG==='es'?'Plan de Entrenamiento':'Training Plan') + ' — ' + new Date().toLocaleDateString() + '</div><div style="margin-top:2px">' + c.goal + '</div></div></div>' +
+    '<div class="pdf-title">' + (LANG==='es'?'Plan Semanal de Entrenamiento':'Weekly Training Plan') + '</div>' +
+    '<div class="pdf-sub">' + c.name + ' · ' + c.level + ' · ' + c.km + 'km/wk · ' + (LANG==='es'?'Objetivo:':'Goal:') + ' ' + c.target + '</div>' +
+    planRows +
+    '<div class="footer"><div class="footer-logo">FinisherFlow</div><div class="footer-note">' + (LANG==='es'?'Escaneá los codigos QR para ver los videos de tecnica':'Scan QR codes to watch technique videos') + ' · FinisherFlow.com</div></div>' +
+    '</body></html>';
+
+  openPrintWindow(html, 'training-plan-' + c.name.replace(/\s+/g,'-').toLowerCase());
+}
+
+function exportCoursePDF(courseId) {
+  var c = COURSES_DATA.find(function(x){ return x.id===parseInt(courseId); });
+  if(!c) return;
+
+  var lessonsHtml = c.lessons.map(function(l, i) {
+    var isLocked = !l.free;
+    var vidHtml = '';
+    if(l.video_url) {
+      var url = l.video_url.indexOf('embed') >= 0 ? l.video_url.replace('embed/','watch?v=').replace('?autoplay=0&controls=1&rel=0&modestbranding=1','') : l.video_url;
+      vidHtml = '<div class="video-section"><div class="video-link-row"><span class="video-label">Video</span><a href="' + url + '" class="video-url">' + url + '</a><img class="qr-code" src="' + qrUrl(url) + '" alt="QR"></div></div>';
+    }
+    return '<div class="day-block">' +
+      '<div class="day-header">' +
+      '<span class="day-label">' + (LANG==='es'?'Leccion':'Lesson') + ' ' + (i+1) + '</span>' +
+      (l.free ? '<span class="day-type" style="color:green;border-color:green">' + (LANG==='es'?'Gratis':'Free') + '</span>' : '<span class="day-type">🔒 ' + (LANG==='es'?'Premium':'Premium') + '</span>') +
+      (l.duration ? '<span class="day-type">⏱ '+l.duration+'</span>' : '') +
+      '</div>' +
+      '<div class="session-card"><div class="session-title">' + l.title + '</div>' +
+      (l.content ? '<div style="font-size:.85rem;color:#444;line-height:1.7;margin:8px 0">' + l.content + '</div>' : '') +
+      vidHtml + '</div></div>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + c.title + '</title>' + buildPDFStyles() + '</head><body>' +
+    '<div class="pdf-header"><div class="pdf-logo">FinisherFlow</div><div class="pdf-meta"><div style="font-weight:600">' + c.title + '</div><div>' + (LANG==='es'?'Estructura del Curso':'Course Structure') + '</div><div>USD ' + c.price + '</div></div></div>' +
+    '<div class="pdf-title">' + c.emoji + ' ' + c.title + '</div>' +
+    '<div class="pdf-sub">' + c.desc + '</div>' +
+    lessonsHtml +
+    '<div class="footer"><div class="footer-logo">FinisherFlow</div><div class="footer-note">' + (LANG==='es'?'Escaneá los QR para acceder a los videos de cada leccion':'Scan QR codes to access lesson videos') + ' · FinisherFlow.com</div></div>' +
+    '</body></html>';
+
+  openPrintWindow(html, 'course-' + c.title.replace(/\s+/g,'-').toLowerCase());
+}
+
+function openPrintWindow(html, filename) {
+  var win = window.open('', '_blank');
+  if(!win) { toast(LANG==='es'?'Permite ventanas emergentes para descargar el PDF':'Allow popups to download PDF'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(function(){
+    win.print();
+  }, 800);
+  toast(LANG==='es'?'PDF listo — usá Guardar como PDF en el dialogo de impresion':'PDF ready — use Save as PDF in the print dialog');
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  setTimeout(function(){
+    document.getElementById('splash').classList.add('gone');
+  }, 1200);
+
+  setTimeout(function(){
+    if(!SB) { showAuth(); return; }
+    SB.auth.getSession().then(function(res){
+      var session = res.data && res.data.session;
+      if(session) {
+        USER = session.user;
+        loadProfile().then(function(){
+          if(PROFILE.role==='client') {
+            showDisc();
+          } else {
+            showApp();
+          }
+        });
+      } else {
+        showAuth();
+      }
+    }).catch(function(){ showAuth(); });
+  }, 1400);
+
+  SB && SB.auth.onAuthStateChange(function(event, session){
+    if(event==='SIGNED_IN' && session && !USER) {
+      USER = session.user;
+      loadProfile().then(function(){
+        if(PROFILE.role==='client') {
+          showDisc();
+        } else {
+          showApp();
+        }
+      });
+    }
+  });
+});
+</script>
+</body>
+</html>
